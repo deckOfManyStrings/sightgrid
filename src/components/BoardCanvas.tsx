@@ -318,8 +318,8 @@ function UnitLayer({ onUnitMouseDown }: UnitLayerProps) {
 
             {/* Base body */}
             {isRound
-              ? <Circle radius={rW} fill={u.color + 'cc'} stroke={u.color} strokeWidth={1.5} />
-              : <Ellipse radiusX={rW} radiusY={rH} fill={u.color + 'cc'} stroke={u.color} strokeWidth={1.5} />
+              ? <Circle radius={rW} fill={u.color} stroke={u.color} strokeWidth={1.5} />
+              : <Ellipse radiusX={rW} radiusY={rH} fill={u.color} stroke={u.color} strokeWidth={1.5} />
             }
 
             {/* Facing arrow */}
