@@ -195,6 +195,80 @@ function LosLayer() {
   );
 }
 
+// ─── Hover LoS Preview Layer ──────────────────────────────────────────────────
+// Lightweight hover preview: 60 rays (vs 360 for persistent), blue-purple tint.
+// Suppressed when the unit already has the full persistent LoS toggle active.
+function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
+  const units = useStore(s => s.units);
+  const terrain = useStore(s => s.terrain);
+  const canvasWidth = useStore(s => s.canvasWidth);
+  const board = useStore(s => s.board);
+
+  if (!hoveredUnitId) return null;
+
+  const unit = units.find(u => u.id === hoveredUnitId);
+  // Skip if no unit found, or if the persistent LoS toggle is already on
+  if (!unit || unit.losEnabled) return null;
+
+  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+  const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
+  const blockers = terrain.filter(t => t.tags.includes('blocks_los'));
+
+  // 60 rays = 6° resolution — good approximation, ~6× cheaper than full LoS
+  const poly = buildLosPolygon(unit.x, unit.y, unit.rangeInches, ppi, blockers, 60);
+
+  return (
+    <Layer clipX={0} clipY={0} clipWidth={canvasWidth} clipHeight={boardHeightPx}>
+      {/* Ghost LoS polygon — blue-purple preview tint */}
+      <Line
+        points={poly}
+        closed
+        fill="rgba(139,92,246,0.07)"
+        stroke="rgba(139,92,246,0.45)"
+        strokeWidth={1}
+        dash={[5, 4]}
+      />
+      {/* Dashed range circle */}
+      {unit.rangeInches > 0 && (
+        <Circle
+          x={unit.x} y={unit.y}
+          radius={unit.rangeInches * ppi}
+          stroke="rgba(139,92,246,0.5)"
+          strokeWidth={1}
+          dash={[4, 6]}
+        />
+      )}
+      {/* Range label */}
+      {unit.rangeInches > 0 && (
+        <Text
+          x={unit.x + unit.rangeInches * ppi + 4}
+          y={unit.y - 8}
+          text={`${unit.rangeInches}"`}
+          fontSize={10}
+          fill="rgba(167,139,250,0.85)"
+        />
+      )}
+      {/* Highlight units visible from hovered unit */}
+      {units
+        .filter(other => other.id !== hoveredUnitId)
+        .map(other => {
+          if (!pointInPolygon(other.x, other.y, poly)) return null;
+          const r = mmToPxUtil(other.baseWidthMm, ppi) * 0.5 * 1.3;
+          return (
+            <Circle key={`hlos-${other.id}`}
+              x={other.x} y={other.y}
+              radius={r}
+              stroke="rgba(139,92,246,0.7)" strokeWidth={1.5}
+              fill="rgba(139,92,246,0.08)"
+              dash={[3, 3]}
+            />
+          );
+        })
+      }
+    </Layer>
+  );
+}
+
 // ─── Unit Layer ───────────────────────────────────────────────────────────────
 interface DragInfo {
   unitId: string;
@@ -204,9 +278,12 @@ interface DragInfo {
   currentY: number;
 }
 
-interface UnitLayerProps { onUnitMouseDown: () => void; }
+interface UnitLayerProps {
+  onUnitMouseDown: () => void;
+  onUnitHover: (id: string | null) => void;
+}
 
-function UnitLayer({ onUnitMouseDown }: UnitLayerProps) {
+function UnitLayer({ onUnitMouseDown, onUnitHover }: UnitLayerProps) {
   const units = useStore(s => s.units);
   const unitsVisible = useStore(s => s.layers.units);
   const selectedIds = useStore(s => s.selectedIds);
@@ -283,8 +360,7 @@ function UnitLayer({ onUnitMouseDown }: UnitLayerProps) {
         const rH = mmToPxUtil(u.baseHeightMm, ppi) * 0.5;
         const draggable = activeTool === 'select' && !u.locked;
         const isRound = u.baseShape === 'round';
-        const arrowLen = Math.max(rW, rH) + 12;
-        const arrowRad = (u.rotation * Math.PI) / 180;
+        const isRect = u.baseShape === 'rect';
 
         const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
           if (activeTool !== 'select') return;
@@ -302,7 +378,10 @@ function UnitLayer({ onUnitMouseDown }: UnitLayerProps) {
           <Group
             key={u.id}
             x={u.x} y={u.y}
+            rotation={u.rotation}
             draggable={draggable}
+            onMouseEnter={() => { if (activeTool === 'select') onUnitHover(u.id); }}
+            onMouseLeave={() => onUnitHover(null)}
             onMouseDown={() => { if (activeTool === 'select') onUnitMouseDown(); }}
             onDragStart={() => handleDragStart(u)}
             onDragMove={(e) => handleDragMove(u, e)}
@@ -313,24 +392,23 @@ function UnitLayer({ onUnitMouseDown }: UnitLayerProps) {
             {isSelected && (
               isRound
                 ? <Circle radius={rW + 4} fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} />
-                : <Ellipse radiusX={rW + 4} radiusY={rH + 4} fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} />
+                : isRect
+                  ? <Rect x={-(rW + 4)} y={-(rH + 4)} width={(rW + 4) * 2} height={(rH + 4) * 2}
+                      fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} cornerRadius={4} />
+                  : <Ellipse radiusX={rW + 4} radiusY={rH + 4} fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} />
             )}
 
             {/* Base body */}
             {isRound
               ? <Circle radius={rW} fill={u.color} stroke={u.color} strokeWidth={1.5} />
-              : <Ellipse radiusX={rW} radiusY={rH} fill={u.color} stroke={u.color} strokeWidth={1.5} />
+              : isRect
+                ? <Rect
+                    x={-rW} y={-rH} width={rW * 2} height={rH * 2}
+                    fill={u.color} stroke={u.color} strokeWidth={1.5}
+                    cornerRadius={5}
+                  />
+                : <Ellipse radiusX={rW} radiusY={rH} fill={u.color} stroke={u.color} strokeWidth={1.5} />
             }
-
-            {/* Facing arrow */}
-            {u.facingArrow && (
-              <Arrow
-                points={[0, 0, Math.cos(arrowRad) * arrowLen, Math.sin(arrowRad) * arrowLen]}
-                pointerLength={7} pointerWidth={6}
-                fill="rgba(255,255,255,0.8)" stroke="rgba(255,255,255,0.8)"
-                strokeWidth={2}
-              />
-            )}
 
             {/* Label */}
             {u.labelVisible && u.name && (
@@ -501,6 +579,7 @@ export function BoardCanvas() {
     drawing: false, points: [], previewPoint: { x: 0, y: 0 },
   });
   const [selBox, setSelBox] = useState<SelBox>({ x: 0, y: 0, w: 0, h: 0, visible: false });
+  const [hoveredUnitId, setHoveredUnitId] = useState<string | null>(null);
 
   // Resize observer
   useEffect(() => {
@@ -793,10 +872,30 @@ export function BoardCanvas() {
       if (ids.length > 0) {
         const ROTATE_STEP = 5; // degrees per scroll tick
         const delta = e.evt.deltaY > 0 ? ROTATE_STEP : -ROTATE_STEP;
-        ids.forEach(id => {
-          const unit = currentUnits.find(u => u.id === id);
-          if (unit) upd(id, { rotation: (unit.rotation + delta + 360) % 360 });
-        });
+        const selected = ids.map(id => currentUnits.find(u => u.id === id)).filter(Boolean) as typeof currentUnits;
+
+        if (selected.length === 1) {
+          // Single unit — spin base in place
+          const unit = selected[0];
+          upd(unit.id, { rotation: (unit.rotation + delta + 360) % 360 });
+        } else {
+          // Group — orbit all positions around the group's centroid,
+          // and also spin each unit's own base by the same delta
+          const cx = selected.reduce((s, u) => s + u.x, 0) / selected.length;
+          const cy = selected.reduce((s, u) => s + u.y, 0) / selected.length;
+          const rad = (delta * Math.PI) / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          selected.forEach(unit => {
+            const dx = unit.x - cx;
+            const dy = unit.y - cy;
+            upd(unit.id, {
+              x: cx + dx * cos - dy * sin,
+              y: cy + dx * sin + dy * cos,
+              rotation: (unit.rotation + delta + 360) % 360,
+            });
+          });
+        }
         return; // don't zoom
       }
     }
@@ -849,7 +948,11 @@ export function BoardCanvas() {
         <GridLayer />
         <TerrainLayer />
         <LosLayer />
-        <UnitLayer onUnitMouseDown={() => { unitHeldRef.current = true; }} />
+        <HoverLosLayer hoveredUnitId={hoveredUnitId} />
+        <UnitLayer
+          onUnitMouseDown={() => { unitHeldRef.current = true; }}
+          onUnitHover={setHoveredUnitId}
+        />
 
         {/* Drawing preview */}
         {drawState.drawing && (

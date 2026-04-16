@@ -421,7 +421,6 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
             </div>
           )}
           {toggle(u.labelVisible, () => updateUnit(u.id, { labelVisible: !u.labelVisible }), 'Show Label')}
-          {toggle(u.facingArrow, () => updateUnit(u.id, { facingArrow: !u.facingArrow }), 'Facing Arrow')}
           {toggle(u.losEnabled, () => updateUnit(u.id, { losEnabled: !u.losEnabled }), 'Line of Sight')}
           {u.losEnabled && (
             <>

@@ -25,7 +25,7 @@ export interface TerrainObject {
 }
 
 // Units
-export type BaseShape = 'round' | 'oval';
+export type BaseShape = 'round' | 'oval' | 'rect';
 
 export interface BaseSize {
   label: string;

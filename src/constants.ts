@@ -20,6 +20,19 @@ export const BASE_SIZES: BaseSize[] = [
   { label: '105x70mm Oval', shape: 'oval', widthMm: 105, heightMm: 70 },
   { label: '120x92mm Oval', shape: 'oval', widthMm: 120, heightMm: 92 },
   { label: '160x105mm Oval', shape: 'oval', widthMm: 160, heightMm: 105 },
+  // Vehicle / Tank bases (rectangular footprints)
+  { label: 'Taurox (109x69mm)', shape: 'rect', widthMm: 109, heightMm: 69 },
+  { label: 'Chimera (116x87mm)', shape: 'rect', widthMm: 116, heightMm: 87 },
+  { label: 'Rhino / Predator (115x75mm)', shape: 'rect', widthMm: 115, heightMm: 75 },
+  { label: 'Leman Russ (119x78mm)', shape: 'rect', widthMm: 119, heightMm: 78 },
+  { label: 'Rogal Dorn (148x105mm)', shape: 'rect', widthMm: 148, heightMm: 105 },
+  { label: 'Wave Serpent (155x100mm)', shape: 'rect', widthMm: 155, heightMm: 100 },
+  { label: 'Land Raider (165x100mm)', shape: 'rect', widthMm: 165, heightMm: 100 },
+  { label: 'Malcador (179x80mm)', shape: 'rect', widthMm: 179, heightMm: 80 },
+  { label: 'Hammerhead (185x140mm)', shape: 'rect', widthMm: 185, heightMm: 140 },
+  { label: 'Repulsor (190x120mm)', shape: 'rect', widthMm: 190, heightMm: 120 },
+  { label: 'Macharius (196x127mm)', shape: 'rect', widthMm: 196, heightMm: 127 },
+  { label: 'Baneblade (232x181mm)', shape: 'rect', widthMm: 232, heightMm: 181 },
 ];
 
 //  Default Colors 
