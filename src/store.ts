@@ -3,7 +3,8 @@ import { immer } from 'zustand/middleware/immer';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   ActiveTool, BoardState, LayerVisibility, TerrainObject,
-  UnitToken, HistorySnapshot, RulerState, UnitTemplate
+  UnitToken, HistorySnapshot, RulerState, UnitTemplate,
+  DrawingObject, LayerName, LayerState
 } from './types';
 import {
   DEFAULT_BOARD_WIDTH_INCHES, DEFAULT_BOARD_HEIGHT_INCHES, MAX_HISTORY_SIZE
@@ -34,6 +35,13 @@ export interface AppStore {
   deleteUnits: (ids: string[]) => void;
   duplicateUnits: (ids: string[]) => void;
 
+  // Drawings
+  drawings: DrawingObject[];
+  addDrawing: (d: DrawingObject) => void;
+  updateDrawing: (id: string, partial: Partial<DrawingObject>) => void;
+  deleteDrawings: (ids: string[]) => void;
+  duplicateDrawings: (ids: string[]) => void;
+
   // Selection
   selectedIds: string[];
   setSelectedIds: (ids: string[]) => void;
@@ -43,8 +51,10 @@ export interface AppStore {
 
   // Clipboard
   clipboardUnits: UnitToken[];
+  clipboardTerrain: TerrainObject[];
+  clipboardDrawings: DrawingObject[];
   copySelection: () => void;
-  pasteClipboard: () => void;
+  pasteClipboard: (centerPos?: { x: number; y: number }) => void;
 
   // Active tool
   activeTool: ActiveTool;
@@ -54,9 +64,16 @@ export interface AppStore {
   unitTemplate: UnitTemplate;
   setUnitTemplate: (t: Partial<UnitTemplate>) => void;
 
-  // Layers
+  // Layers & Visibilities
   layers: LayerVisibility;
   toggleLayer: (layer: keyof LayerVisibility) => void;
+  
+  // Object Layers
+  activeLayer: LayerName;
+  setActiveLayer: (layer: LayerName) => void;
+  layerStates: Record<LayerName, LayerState>;
+  toggleLayerVisibilityObj: (layer: LayerName) => void;
+  toggleLayerLockObj: (layer: LayerName) => void;
 
   // Snap to grid
   snapEnabled: boolean;
@@ -99,24 +116,24 @@ const defaultTemplate: UnitTemplate = {
 // INITIAL BOARD STATE FOR DEMONSTRATION
 const b_id_center = uuidv4();
 const INITIAL_TERRAIN: TerrainObject[] = [
-  { id: uuidv4(), shape: 'rect', points: [460, 160, 610, 160, 610, 410, 460, 410], tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false },
-  { id: uuidv4(), shape: 'rect', points: [330, 410, 460, 410, 460, 560, 330, 560], tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false },
+  { id: uuidv4(), shape: 'rect', points: [460, 160, 610, 160, 610, 410, 460, 410], tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain' },
+  { id: uuidv4(), shape: 'rect', points: [330, 410, 460, 410, 460, 560, 330, 560], tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain' },
 ];
 
 const INITIAL_UNITS: UnitToken[] = [
   // Blue group (MSU)
-  { id: b_id_center, name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: true, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 170, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 290, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 220, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 340, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: b_id_center, name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: true, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 170, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 290, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 220, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 340, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
 
-  // Green group (Orks)
-  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 420, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
-  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  // Green group (Nobz)
+  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 420, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
 ];
 
 // Store
@@ -158,6 +175,33 @@ export const useStore = create<AppStore>()(
     deleteTerrain: (id) => {
       get().pushHistory();
       set((s) => { s.terrain = s.terrain.filter((t) => t.id !== id); });
+    },
+
+    // Drawings
+    drawings: [],
+    addDrawing: (d) => {
+      get().pushHistory();
+      set((s) => { s.drawings.push(d); });
+    },
+    updateDrawing: (id, partial) =>
+      set((s) => {
+        const i = s.drawings.findIndex((d) => d.id === id);
+        if (i >= 0) Object.assign(s.drawings[i], partial);
+      }),
+    deleteDrawings: (ids) => {
+      get().pushHistory();
+      set((s) => { s.drawings = s.drawings.filter((d) => !ids.includes(d.id)); });
+    },
+    duplicateDrawings: (ids) => {
+      get().pushHistory();
+      set((s) => {
+        const toDup = s.drawings.filter((d) => ids.includes(d.id));
+        toDup.forEach((d) => {
+          // move simple points
+          const newPoints = d.points.map((p, i) => p + 20); // x+20, y+20
+          s.drawings.push({ ...d, id: uuidv4(), points: newPoints });
+        });
+      });
     },
 
     // Units
@@ -203,23 +247,78 @@ export const useStore = create<AppStore>()(
 
     // Clipboard
     clipboardUnits: [],
+    clipboardTerrain: [] as TerrainObject[],
+    clipboardDrawings: [] as DrawingObject[],
     copySelection: () => {
-      const { units, selectedIds } = get();
-      const toCopy = units.filter((u) => selectedIds.includes(u.id));
-      // Save clones
-      set((s) => { s.clipboardUnits = JSON.parse(JSON.stringify(toCopy)); });
+      const { units, terrain, drawings, selectedIds } = get();
+      const toCopyUnits = units.filter((u) => selectedIds.includes(u.id));
+      const toCopyTerrain = terrain.filter((t) => selectedIds.includes(t.id));
+      const toCopyDrawings = drawings.filter((d) => selectedIds.includes(d.id));
+      
+      set((s) => { 
+        s.clipboardUnits = JSON.parse(JSON.stringify(toCopyUnits)); 
+        (s as any).clipboardTerrain = JSON.parse(JSON.stringify(toCopyTerrain));
+        (s as any).clipboardDrawings = JSON.parse(JSON.stringify(toCopyDrawings));
+      });
     },
-    pasteClipboard: () => {
+    pasteClipboard: (centerPos) => {
       const { clipboardUnits } = get();
-      if (clipboardUnits.length === 0) return;
+      const clipboardTerrain = (get() as any).clipboardTerrain || [];
+      const clipboardDrawings = (get() as any).clipboardDrawings || [];
+      
+      if (clipboardUnits.length === 0 && clipboardTerrain.length === 0 && clipboardDrawings.length === 0) return;
       get().pushHistory();
       set((s) => {
         const newIds: string[] = [];
+        
+        let cx = 0, cy = 0;
+        let totalCount = 0;
+        
+        clipboardUnits.forEach((u) => { cx += u.x; cy += u.y; totalCount++; });
+        clipboardTerrain.forEach((t) => {
+          let tX = 0, tY = 0;
+          for (let i = 0; i < t.points.length; i += 2) { tX += t.points[i]; tY += t.points[i+1]; }
+          if (t.points.length > 0) {
+            cx += tX / (t.points.length / 2); cy += tY / (t.points.length / 2);
+            totalCount++;
+          }
+        });
+        clipboardDrawings.forEach((d) => {
+          let dX = 0, dY = 0;
+          for (let i = 0; i < d.points.length; i += 2) { dX += d.points[i]; dY += d.points[i+1]; }
+          if (d.points.length > 0) {
+            cx += dX / (d.points.length / 2); cy += dY / (d.points.length / 2);
+            totalCount++;
+          }
+        });
+        
+        if (totalCount > 0) {
+          cx /= totalCount; cy /= totalCount;
+        }
+
+        const dx = centerPos ? (centerPos.x - cx) : 20;
+        const dy = centerPos ? (centerPos.y - cy) : 20;
+
         clipboardUnits.forEach((u) => {
           const newId = uuidv4();
           newIds.push(newId);
-          s.units.push({ ...u, id: newId, x: u.x + 20, y: u.y + 20 });
+          s.units.push({ ...u, id: newId, x: u.x + (centerPos ? dx : 20), y: u.y + (centerPos ? dy : 20) });
         });
+        
+        clipboardTerrain.forEach((t) => {
+          const newId = uuidv4();
+          newIds.push(newId);
+          const newPts = t.points.map((p, i) => p + (centerPos ? (i % 2 === 0 ? dx : dy) : 20));
+          s.terrain.push({ ...t, id: newId, points: newPts });
+        });
+
+        clipboardDrawings.forEach((d) => {
+          const newId = uuidv4();
+          newIds.push(newId);
+          const newPts = d.points.map((p, i) => p + (centerPos ? (i % 2 === 0 ? dx : dy) : 20));
+          s.drawings.push({ ...d, id: newId, points: newPts });
+        });
+
         s.selectedIds = newIds;
       });
     },
@@ -233,13 +332,24 @@ export const useStore = create<AppStore>()(
     setUnitTemplate: (t) =>
       set((s) => { Object.assign(s.unitTemplate, t); }),
 
-    // Layers
+    // Layers & Visibilities
     layers: {
       map: true, grid: true, terrain: true,
       units: true, los: true, measurement: true,
     },
     toggleLayer: (layer) =>
       set((s) => { s.layers[layer] = !s.layers[layer]; }),
+    
+    // Object Layers
+    activeLayer: 'drawings',
+    setActiveLayer: (layer) => set((s) => { s.activeLayer = layer; }),
+    layerStates: {
+      units: { id: 'units', visible: true, locked: false },
+      terrain: { id: 'terrain', visible: true, locked: false },
+      drawings: { id: 'drawings', visible: true, locked: false },
+    },
+    toggleLayerVisibilityObj: (layer) => set((s) => { s.layerStates[layer].visible = !s.layerStates[layer].visible; }),
+    toggleLayerLockObj: (layer) => set((s) => { s.layerStates[layer].locked = !s.layerStates[layer].locked; }),
 
     // Snap
     snapEnabled: false,
@@ -262,10 +372,11 @@ export const useStore = create<AppStore>()(
     history: [],
     historyIndex: -1,
     pushHistory: () => {
-      const { terrain, units, history, historyIndex } = get();
+      const { terrain, units, drawings, history, historyIndex } = get();
       const snapshot: HistorySnapshot = {
         terrain: JSON.parse(JSON.stringify(terrain)),
         units: JSON.parse(JSON.stringify(units)),
+        drawings: JSON.parse(JSON.stringify(drawings || [])),
       };
       const newHistory = history.slice(0, historyIndex + 1);
       newHistory.push(snapshot);
@@ -282,6 +393,7 @@ export const useStore = create<AppStore>()(
       set((s) => {
         s.terrain = JSON.parse(JSON.stringify(prev.terrain));
         s.units = JSON.parse(JSON.stringify(prev.units));
+        s.drawings = prev.drawings ? JSON.parse(JSON.stringify(prev.drawings)) : [];
         s.historyIndex = historyIndex - 1;
       });
     },
@@ -292,24 +404,19 @@ export const useStore = create<AppStore>()(
       set((s) => {
         s.terrain = JSON.parse(JSON.stringify(next.terrain));
         s.units = JSON.parse(JSON.stringify(next.units));
+        s.drawings = next.drawings ? JSON.parse(JSON.stringify(next.drawings)) : [];
         s.historyIndex = historyIndex + 1;
       });
     },
 
     // Persistence
     exportJSON: () => {
-      const { board, terrain, units, canvasWidth } = get();
-      // Include canvasWidth so importJSON can rescale positions if the canvas
-      // size differs between save and load sessions.
-      return JSON.stringify({ board, terrain, units, savedCanvasWidth: canvasWidth }, null, 2);
+      const { board, terrain, units, drawings, layerStates, canvasWidth } = get();
+      return JSON.stringify({ board, terrain, units, drawings, layerStates, savedCanvasWidth: canvasWidth }, null, 2);
     },
     importJSON: (json) => {
       try {
         const data = JSON.parse(json);
-        // Compute the position scaling ratio. All terrain/unit positions and
-        // mapX/mapY are stored as absolute canvas pixels. If the canvas is a
-        // different width now (different window size / screen resolution), we
-        // must scale every position so it maps to the same fractional location.
         const currentCanvasWidth = get().canvasWidth;
         const ratio = data.savedCanvasWidth && data.savedCanvasWidth > 0
           ? currentCanvasWidth / data.savedCanvasWidth
@@ -319,8 +426,6 @@ export const useStore = create<AppStore>()(
           if (data.board) {
             Object.assign(s.board, data.board);
             if (ratio !== 1) {
-              // mapScaleX/Y are fractions of canvasWidth — no scaling needed.
-              // Only the absolute-pixel offset needs rescaling.
               s.board.mapX = (data.board.mapX ?? 0) * ratio;
               s.board.mapY = (data.board.mapY ?? 0) * ratio;
             }
@@ -331,6 +436,7 @@ export const useStore = create<AppStore>()(
               points: ratio === 1
                 ? t.points
                 : t.points.map((v: number) => v * ratio),
+              layerId: t.layerId || 'terrain',
             }));
           }
           if (data.units) {
@@ -338,8 +444,23 @@ export const useStore = create<AppStore>()(
               ...u,
               x: u.x * ratio,
               y: u.y * ratio,
+              layerId: u.layerId || 'units',
             }));
           }
+          if (data.drawings) {
+            s.drawings = data.drawings.map((draw: any) => ({
+              ...draw,
+              points: ratio === 1 ? draw.points : draw.points.map((v: number) => v * ratio),
+              layerId: draw.layerId || 'drawings',
+            }));
+          } else {
+            s.drawings = [];
+          }
+          
+          if (data.layerStates) {
+            s.layerStates = data.layerStates;
+          }
+          
           s.selectedIds = [];
         });
       } catch (e) {
@@ -351,6 +472,7 @@ export const useStore = create<AppStore>()(
       set((s) => {
         s.terrain = [];
         s.units = [];
+        s.drawings = [];
         s.selectedIds = [];
         s.ruler = { active: false, startX: 0, startY: 0, endX: 0, endY: 0 };
       });

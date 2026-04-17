@@ -8,7 +8,16 @@ export type ActiveTool =
   | 'terrain_rect'
   | 'terrain_polygon'
   | 'ruler'
-  | 'movement_radius';
+  | 'movement_radius'
+  | 'draw';
+
+export type LayerName = 'units' | 'terrain' | 'drawings';
+
+export interface LayerState {
+  id: LayerName;
+  visible: boolean;
+  locked: boolean;
+}
 
 // Terrain
 export type TerrainTag = 'blocks_los' | 'obscuring' | 'difficult' | 'decorative';
@@ -22,6 +31,7 @@ export interface TerrainObject {
   color: string;
   opacity: number;
   locked: boolean;
+  layerId: LayerName;
 }
 
 // Units
@@ -50,6 +60,18 @@ export interface UnitToken {
   losEnabled: boolean;
   rangeInches: number;
   locked: boolean;
+  layerId: LayerName;
+}
+
+// Drawings
+export interface DrawingObject {
+  id: string;
+  points: number[];
+  color: string;
+  strokeWidth: number;
+  opacity: number;
+  locked: boolean;
+  layerId: LayerName;
 }
 
 // Board
@@ -80,6 +102,7 @@ export interface LayerVisibility {
 export interface HistorySnapshot {
   terrain: TerrainObject[];
   units: UnitToken[];
+  drawings: DrawingObject[];
 }
 
 // Ruler

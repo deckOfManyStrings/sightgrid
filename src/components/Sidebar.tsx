@@ -28,6 +28,12 @@ const toolGroups = [
       { id: 'ruler' as ActiveTool, icon: '📏', label: 'Ruler', tooltip: 'Measure distance (M)' },
     ],
   },
+  {
+    label: 'Markup',
+    tools: [
+      { id: 'draw' as ActiveTool, icon: '✎', label: 'Draw', tooltip: 'Freehand Draw (D)' },
+    ],
+  },
 ];
 
 export function Sidebar() {

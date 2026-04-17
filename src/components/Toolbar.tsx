@@ -14,8 +14,6 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
   const setActiveTool = useStore(s => s.setActiveTool);
   const undo = useStore(s => s.undo);
   const redo = useStore(s => s.redo);
-  const copySelection = useStore(s => s.copySelection);
-  const pasteClipboard = useStore(s => s.pasteClipboard);
   const stageScale = useStore(s => s.stageScale);
   const stageX = useStore(s => s.stageX);
   const stageY = useStore(s => s.stageY);
@@ -24,8 +22,11 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
   const toggleSnap = useStore(s => s.toggleSnap);
   const selectedIds = useStore(s => s.selectedIds);
   const terrain = useStore(s => s.terrain);
+  const units = useStore(s => s.units);
+  const drawings = useStore(s => s.drawings) || [];
   const deleteUnits = useStore(s => s.deleteUnits);
   const deleteTerrain = useStore(s => s.deleteTerrain);
+  const deleteDrawings = useStore(s => s.deleteDrawings);
   const duplicateUnits = useStore(s => s.duplicateUnits);
   const boardWidthInches = useStore(s => s.board.widthInches);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -34,12 +35,15 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
   const selectedCount = selectedIds.length;
   const { user } = useAuth();
 
-  // Deletes whatever is selected — terrain or units
+  // Deletes whatever is selected
   const deleteSelected = () => {
     const terrainIds = selectedIds.filter(id => terrain.some(t => t.id === id));
-    const unitIds = selectedIds.filter(id => !terrain.some(t => t.id === id));
-    terrainIds.forEach(id => deleteTerrain(id));
+    const unitIds = selectedIds.filter(id => units.some(u => u.id === id));
+    const drawingIds = selectedIds.filter(id => drawings.some(d => d.id === id));
+    
+    if (terrainIds.length > 0) terrainIds.forEach(id => deleteTerrain(id));
     if (unitIds.length > 0) deleteUnits(unitIds);
+    if (drawingIds.length > 0) deleteDrawings(drawingIds);
   };
 
   // Keyboard shortcuts
@@ -48,8 +52,6 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); copySelection(); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') { e.preventDefault(); pasteClipboard(); }
       if (!e.metaKey && !e.ctrlKey) {
         if (e.key === 'v' || e.key === 'V') setActiveTool('select');
         if (e.key === ' ') { e.preventDefault(); /* space reserved */ }
@@ -65,7 +67,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo, copySelection, pasteClipboard, setActiveTool, selectedIds, deleteUnits, deleteTerrain, terrain]);
+  }, [undo, redo, setActiveTool, selectedIds, deleteUnits, deleteTerrain, terrain]);
 
   const tbtn = (
     icon: string, label: string, onClick: () => void,

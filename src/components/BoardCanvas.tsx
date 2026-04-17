@@ -57,8 +57,9 @@ function TerrainLayer() {
   const activeTool = useStore(s => s.activeTool);
   const updateTerrain = useStore(s => s.updateTerrain);
   const setSelectedIds = useStore(s => s.setSelectedIds);
+  const layerStates = useStore(s => s.layerStates);
 
-  if (!terrainVisible) return null;
+  if (!layerStates.terrain.visible) return null;
 
   const tagColor = (t: TerrainObject) => {
     if (t.tags.includes('blocks_los')) return t.color || '#475569';
@@ -75,10 +76,11 @@ function TerrainLayer() {
         const commonProps = {
           opacity: t.opacity,
           onClick: () => {
-            if (activeTool === 'select') setSelectedIds([t.id]);
+            if (activeTool === 'select' && !layerStates.terrain.locked) setSelectedIds([t.id]);
           },
-          draggable: activeTool === 'select' && !t.locked,
+          draggable: activeTool === 'select' && !t.locked && !layerStates.terrain.locked,
           onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
+            if (layerStates.terrain.locked) return;
             const dx = e.target.x(), dy = e.target.y();
             updateTerrain(t.id, {
               points: t.points.map((v, i) => i % 2 === 0 ? v + dx : v + dy),
@@ -132,6 +134,52 @@ function TerrainLayer() {
               listening={false}
             />
           </Group>
+        );
+      })}
+    </Layer>
+  );
+}
+
+// ─── Drawing Layer ─────────────────────────────────────────────────────────────
+function DrawingLayer() {
+  const drawings = useStore(s => s.drawings) || [];
+  const layerStates = useStore(s => s.layerStates);
+  const selectedIds = useStore(s => s.selectedIds);
+  const activeTool = useStore(s => s.activeTool);
+  const updateDrawing = useStore(s => s.updateDrawing);
+  const setSelectedIds = useStore(s => s.setSelectedIds);
+
+  if (!layerStates.drawings.visible) return null;
+
+  return (
+    <Layer>
+      {drawings.map((d) => {
+        const isSelected = selectedIds.includes(d.id);
+        return (
+          <Line
+            key={d.id}
+            points={d.points}
+            stroke={isSelected ? '#a5f3fc' : d.color}
+            strokeWidth={isSelected ? d.strokeWidth + 4 : d.strokeWidth}
+            opacity={d.opacity}
+            tension={0.1} // reduced from 0.5 for sharper handwriting
+            lineCap="round"
+            lineJoin="round"
+            hitStrokeWidth={Math.max(15, d.strokeWidth + 5)}
+            draggable={activeTool === 'select' && !layerStates.drawings.locked}
+            onClick={() => {
+              if (activeTool === 'select' && !layerStates.drawings.locked) setSelectedIds([d.id]);
+            }}
+            onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
+              if (layerStates.drawings.locked) return;
+              const dx = e.target.x(), dy = e.target.y();
+              updateDrawing(d.id, {
+                points: d.points.map((v, i) => i % 2 === 0 ? v + dx : v + dy),
+              });
+              e.target.x(0);
+              e.target.y(0);
+            }}
+          />
         );
       })}
     </Layer>
@@ -319,6 +367,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
   const toggleSelection = useStore(s => s.toggleSelection);
   const setSelectedIds = useStore(s => s.setSelectedIds);
   const pushHistory = useStore(s => s.pushHistory);
+  const layerStates = useStore(s => s.layerStates);
 
   const dragStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
   const isDraggingRef = useRef(false); // suppresses hover during any drag
@@ -331,11 +380,12 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
 
-  if (!unitsVisible) return null;
+  if (!layerStates.units.visible) return null;
 
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
 
   const handleDragStart = (u: UnitToken) => {
+    if (layerStates.units.locked) return;
     isDraggingRef.current = true;
     lastPrimaryPosRef.current = { x: u.x, y: u.y };
     onDragPrimaryChange(u.id);
@@ -394,12 +444,12 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
         const isSelected = selectedIds.includes(u.id);
         const rW = mmToPxUtil(u.baseWidthMm, ppi) * 0.5;
         const rH = mmToPxUtil(u.baseHeightMm, ppi) * 0.5;
-        const draggable = activeTool === 'select' && !u.locked;
+        const draggable = activeTool === 'select' && !u.locked && !layerStates.units.locked;
         const isRound = u.baseShape === 'round';
         const isRect = u.baseShape === 'rect';
 
         const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-          if (activeTool !== 'select') return;
+          if (activeTool !== 'select' || layerStates.units.locked) return;
           e.cancelBubble = true;
           if (e.evt.shiftKey) {
             toggleSelection(u.id);
@@ -638,6 +688,42 @@ export function BoardCanvas() {
     return () => ro.disconnect();
   }, [setCanvasDimensions]);
 
+  // Copy & Paste shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        useStore.getState().copySelection();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        const stage = stageRef.current;
+        let centerPos = undefined;
+        if (stage) {
+          const pos = stage.getPointerPosition();
+          if (pos) {
+            const { stageX, stageY, stageScale } = useStore.getState();
+            centerPos = {
+              x: (pos.x - stageX) / stageScale,
+              y: (pos.y - stageY) / stageScale,
+            };
+            // optional: snap to grid if enabled
+            const { snapEnabled, board, canvasWidth } = useStore.getState();
+            if (snapEnabled) {
+              const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+              centerPos.x = Math.round(centerPos.x / ppi) * ppi;
+              centerPos.y = Math.round(centerPos.y / ppi) * ppi;
+            }
+          }
+        }
+        useStore.getState().pasteClipboard(centerPos);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // WASD smooth pan
   useEffect(() => {
     const PAN_SPEED = 8; // px per frame at 100% zoom
@@ -777,6 +863,12 @@ export function BoardCanvas() {
       return;
     }
 
+    // Freehand draw start
+    if (activeTool === 'draw') {
+      setDrawState({ drawing: true, points: [pos.x, pos.y], previewPoint: pos });
+      return;
+    }
+
     // Terrain line start
     if (activeTool === 'terrain_line') {
       if (!drawState.drawing) {
@@ -832,6 +924,12 @@ export function BoardCanvas() {
       return;
     }
 
+    // Freehand draw preview
+    if (activeTool === 'draw' && drawState.drawing) {
+      setDrawState(prev => ({ ...prev, points: [...prev.points, pos.x, pos.y], previewPoint: pos }));
+      return;
+    }
+
     // Terrain line/polygon preview
     if ((activeTool === 'terrain_line' || activeTool === 'terrain_polygon') && drawState.drawing) {
       setDrawState(prev => ({ ...prev, previewPoint: pos }));
@@ -865,7 +963,24 @@ export function BoardCanvas() {
       if (Math.abs(pos.x - startX) > 5 && Math.abs(pos.y - startY) > 5) {
         addTerrain({
           id: uuidv4(), shape: 'rect', points: pts,
-          tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false,
+          tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
+        });
+      }
+      setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
+      return;
+    }
+
+    // Freehand draw finalize
+    if (activeTool === 'draw' && drawState.drawing) {
+      if (drawState.points.length > 4) { // Needs at least 2 x,y pairs + 1 point
+        useStore.getState().addDrawing({
+          id: uuidv4(),
+          points: drawState.points,
+          color: '#e4e4e7',
+          strokeWidth: 4,
+          opacity: 0.5,
+          locked: false,
+          layerId: useStore.getState().activeLayer,
         });
       }
       setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
@@ -1046,6 +1161,7 @@ export function BoardCanvas() {
         <MapImageLayer />
         <GridLayer />
         <TerrainLayer />
+        <DrawingLayer />
         <LosLayer />
         <HoverLosLayer hoveredUnitId={hoveredUnitId} />
         <UnitLayer
@@ -1084,6 +1200,13 @@ export function BoardCanvas() {
               <Line
                 points={[drawState.points[0], drawState.points[1], drawState.previewPoint.x, drawState.previewPoint.y]}
                 stroke="#a5f3fc" strokeWidth={2} dash={[5, 3]}
+              />
+            )}
+            {activeTool === 'draw' && drawState.drawing && (
+              <Line
+                points={drawState.points}
+                stroke="#e4e4e7" strokeWidth={4} tension={0.1}
+                lineCap="round" lineJoin="round" opacity={0.5}
               />
             )}
           </Layer>

@@ -17,7 +17,9 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
   const updateUnit = useStore(s => s.updateUnit);
   const deleteUnits = useStore(s => s.deleteUnits);
   const deleteTerrain = useStore(s => s.deleteTerrain);
+  const deleteDrawings = useStore(s => s.deleteDrawings);
   const terrain = useStore(s => s.terrain);
+  const drawings = useStore(s => s.drawings) || [];
   const duplicateUnits = useStore(s => s.duplicateUnits);
   const unitTemplate = useStore(s => s.unitTemplate);
   const setUnitTemplate = useStore(s => s.setUnitTemplate);
@@ -26,6 +28,11 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
   const setBoard = useStore(s => s.setBoard);
   const layers = useStore(s => s.layers);
   const toggleLayer = useStore(s => s.toggleLayer);
+  const activeLayer = useStore(s => s.activeLayer);
+  const setActiveLayer = useStore(s => s.setActiveLayer);
+  const layerStates = useStore(s => s.layerStates);
+  const toggleLayerVisibilityObj = useStore(s => s.toggleLayerVisibilityObj);
+  const toggleLayerLockObj = useStore(s => s.toggleLayerLockObj);
   const snapEnabled = useStore(s => s.snapEnabled);
   const toggleSnap = useStore(s => s.toggleSnap);
   const exportJSON = useStore(s => s.exportJSON);
@@ -43,6 +50,7 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
 
   const selectedUnits = units.filter(u => selectedIds.includes(u.id));
+  const selectedDrawings = drawings.filter(d => selectedIds.includes(d.id));
   const hasSingleUnit = selectedUnits.length === 1;
   const u = hasSingleUnit ? selectedUnits[0] : null;
 
@@ -50,6 +58,16 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
   const selectedTerrain = selectedIds.length === 1
     ? terrain.find(t => t.id === selectedIds[0]) ?? null
     : null;
+
+  const deleteSelected = () => {
+    const terrainIds = selectedIds.filter(id => terrain.some(t => t.id === id));
+    const unitIds = selectedIds.filter(id => units.some(unit => unit.id === id));
+    const drawingIds = selectedIds.filter(id => drawings.some(d => d.id === id));
+    
+    if (terrainIds.length > 0) terrainIds.forEach(id => deleteTerrain(id));
+    if (unitIds.length > 0) deleteUnits(unitIds);
+    if (drawingIds.length > 0) deleteDrawings(drawingIds);
+  };
 
   function handleMapUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -460,11 +478,20 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
         </>
       ))}
 
-      {/* Actions for single selected unit */}
       {selectedIds.length === 1 && u && section('Actions', (
         <>
           {btn('⧉ Duplicate', () => duplicateUnits([u.id]), 'primary')}
           {btn('🗑 Delete', () => deleteUnits([u.id]), 'danger')}
+        </>
+      ))}
+
+      {/* Selected Drawing */}
+      {selectedDrawings.length === 1 && selectedIds.length === 1 && section('Drawing', (
+        <>
+          <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 10 }}>
+            Type: <span style={{ color: '#e2e8f0' }}>Freehand Line</span>
+          </div>
+          {btn('🗑 Delete Drawing', () => deleteDrawings(selectedIds), 'danger')}
         </>
       ))}
 
@@ -558,16 +585,51 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
           {btn('▬▬▬ 3 Rows', () => arrangeInRows(3))}
           <div style={{ marginTop: 8 }}>
             {btn('⧉ Duplicate', () => duplicateUnits(selectedIds), 'primary')}
-            {btn('🗑 Delete Selected', () => deleteUnits(selectedIds), 'danger')}
+            {btn('🗑 Delete Selected', deleteSelected, 'danger')}
           </div>
         </>
       ))}
 
-      {/* Layers */}
-      {section('Layers', (
+      {/* Object Layers */}
+      {section('Object Layers', (
         <>
-          {(Object.keys(layers) as (keyof typeof layers)[]).map(k =>
-            toggle(layers[k], () => toggleLayer(k), k.charAt(0).toUpperCase() + k.slice(1))
+          {(['units', 'terrain', 'drawings'] as const).map(k => {
+            const st = layerStates[k];
+            const isActive = activeLayer === k;
+            return (
+              <div key={k} style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '4px 6px', marginBottom: 4, borderRadius: 4,
+                background: isActive ? 'rgba(99,102,241,0.2)' : 'transparent',
+                border: isActive ? '1px solid #6366f1' : '1px solid transparent',
+              }}>
+                <div 
+                  onClick={() => setActiveLayer(k)}
+                  style={{ flexGrow: 1, cursor: 'pointer', fontSize: 11, fontWeight: isActive ? 600 : 400, color: isActive ? '#a5b4fc' : '#94a3b8', textTransform: 'capitalize' }}
+                >
+                  {k}
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span onClick={() => toggleLayerLockObj(k)} style={{ cursor: 'pointer', opacity: st.locked ? 1 : 0.4 }} title={st.locked ? 'Unlock Layer' : 'Lock Layer'}>
+                    {st.locked ? '🔒' : '🔓'}
+                  </span>
+                  <span onClick={() => toggleLayerVisibilityObj(k)} style={{ cursor: 'pointer', opacity: st.visible ? 1 : 0.4 }} title={st.visible ? 'Hide Layer' : 'Show Layer'}>
+                    {st.visible ? '👁' : '👁‍🗨'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ))}
+
+      {/* Settings Layers */}
+      {section('System Layers', (
+        <>
+          {(Object.keys(layers) as (keyof typeof layers)[]).map(k => {
+            if (k === 'units' || k === 'terrain') return null; // now managed by Object Layers
+            return toggle(layers[k], () => toggleLayer(k), k.charAt(0).toUpperCase() + k.slice(1))
+          }
           )}
         </>
       ))}
