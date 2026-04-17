@@ -380,9 +380,8 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
           e.cancelBubble = true;
           if (e.evt.shiftKey) {
             toggleSelection(u.id);
-          } else if (!selectedIds.includes(u.id)) {
-            // Only switch selection when clicking a unit NOT already in the group.
-            // Clicking a unit that IS selected keeps the current selection intact.
+          } else {
+            // Isolate selection to this unit when explicitly clicked
             setSelectedIds([u.id]);
           }
         };
@@ -434,6 +433,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
                 width={rW * 2.5}
                 x={-rW * 1.25}
                 y={rH + 4}
+                listening={false}
               />
             )}
           </Group>
@@ -850,9 +850,13 @@ export function BoardCanvas() {
     if (selBoxStart.current && activeTool === 'select') {
       const { x, y, w, h } = selBox;
       if (w > 5 || h > 5) {
-        const inBox = units
-          .filter(u => u.x >= x && u.x <= x + w && u.y >= y && u.y <= y + h)
-          .map(u => u.id);
+        const inBox = units.filter(u => {
+          const rW = mmToPxUtil(u.baseWidthMm, ppi) / 2;
+          const rH = mmToPxUtil(u.baseHeightMm, ppi) / 2;
+          return u.x + rW >= x && u.x - rW <= x + w &&
+                 u.y + rH >= y && u.y - rH <= y + h;
+        }).map(u => u.id);
+        
         if (e.evt.shiftKey) {
           inBox.forEach(id => toggleSelection(id));
         } else {
