@@ -579,7 +579,7 @@ export function BoardCanvas() {
 
   // Require 8px movement before Konva starts a drag — prevents accidental drag
   // starts when the user holds mouse to scroll-rotate with a tiny hand wobble.
-  Konva.dragMinDistance = 8;
+  Konva.dragDistance = 8;
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
