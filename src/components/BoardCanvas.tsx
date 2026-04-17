@@ -848,7 +848,13 @@ export function BoardCanvas() {
 
     // Selection box 
     if (selBoxStart.current && activeTool === 'select') {
-      const { x, y, w, h } = selBox;
+      const sx = selBoxStart.current.x;
+      const sy = selBoxStart.current.y;
+      const x = Math.min(sx, pos.x);
+      const y = Math.min(sy, pos.y);
+      const w = Math.abs(pos.x - sx);
+      const h = Math.abs(pos.y - sy);
+
       if (w > 5 || h > 5) {
         const inBox = units.filter(u => {
           const rW = mmToPxUtil(u.baseWidthMm, ppi) / 2;
