@@ -139,8 +139,25 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
         </>
       )}
 
-      {/* Account — pushed to the far right */}
-      <div style={{ marginLeft: 'auto' }}>
+      {/* Right side controls — pushed to the far right */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <a 
+          href="https://buy.stripe.com/dRm5kF4yOcSdgOV4G30Fi00"
+          target="_blank"
+          rel="noreferrer"
+          title="Support SightGrid Development"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)',
+            color: '#34d399', borderRadius: 8,
+            padding: '4px 10px', fontSize: 12, fontWeight: 600,
+            textDecoration: 'none',
+            cursor: 'pointer', transition: 'all 0.15s',
+          }}
+        >
+          <span>💖</span>
+          <span>Support</span>
+        </a>
         <AccountButton
           onOpenScenarios={onOpenScenarios}
           onOpenAuth={onOpenAuth}
