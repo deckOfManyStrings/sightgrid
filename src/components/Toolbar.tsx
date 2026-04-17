@@ -14,6 +14,8 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
   const setActiveTool = useStore(s => s.setActiveTool);
   const undo = useStore(s => s.undo);
   const redo = useStore(s => s.redo);
+  const copySelection = useStore(s => s.copySelection);
+  const pasteClipboard = useStore(s => s.pasteClipboard);
   const stageScale = useStore(s => s.stageScale);
   const stageX = useStore(s => s.stageX);
   const stageY = useStore(s => s.stageY);
@@ -46,6 +48,8 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') { e.preventDefault(); copySelection(); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') { e.preventDefault(); pasteClipboard(); }
       if (!e.metaKey && !e.ctrlKey) {
         if (e.key === 'v' || e.key === 'V') setActiveTool('select');
         if (e.key === ' ') { e.preventDefault(); /* space reserved */ }
@@ -61,7 +65,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo, setActiveTool, selectedIds, deleteUnits, deleteTerrain, terrain]);
+  }, [undo, redo, copySelection, pasteClipboard, setActiveTool, selectedIds, deleteUnits, deleteTerrain, terrain]);
 
   const tbtn = (
     icon: string, label: string, onClick: () => void,

@@ -41,6 +41,11 @@ export interface AppStore {
   toggleSelection: (id: string) => void;
   clearSelection: () => void;
 
+  // Clipboard
+  clipboardUnits: UnitToken[];
+  copySelection: () => void;
+  pasteClipboard: () => void;
+
   // Active tool
   activeTool: ActiveTool;
   setActiveTool: (tool: ActiveTool) => void;
@@ -195,6 +200,29 @@ export const useStore = create<AppStore>()(
         else s.selectedIds.push(id);
       }),
     clearSelection: () => set((s) => { s.selectedIds = []; }),
+
+    // Clipboard
+    clipboardUnits: [],
+    copySelection: () => {
+      const { units, selectedIds } = get();
+      const toCopy = units.filter((u) => selectedIds.includes(u.id));
+      // Save clones
+      set((s) => { s.clipboardUnits = JSON.parse(JSON.stringify(toCopy)); });
+    },
+    pasteClipboard: () => {
+      const { clipboardUnits } = get();
+      if (clipboardUnits.length === 0) return;
+      get().pushHistory();
+      set((s) => {
+        const newIds: string[] = [];
+        clipboardUnits.forEach((u) => {
+          const newId = uuidv4();
+          newIds.push(newId);
+          s.units.push({ ...u, id: newId, x: u.x + 20, y: u.y + 20 });
+        });
+        s.selectedIds = newIds;
+      });
+    },
 
     // Tool
     activeTool: 'select',
