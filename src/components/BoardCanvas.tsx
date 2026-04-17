@@ -899,7 +899,7 @@ export function BoardCanvas() {
         } else {
           // Group rotation
           let cx = 0, cy = 0;
-          if (isDraggingRef.current) {
+          if (dragPrimaryIdRef.current !== null) {
             // When actively dragging, Konva rigidly locks the primary unit to the mouse pointer.
             // If we rotate the group around the centroid, the primary unit would mathematically orbit 
             // away from the mouse cursor, but Konva would snap it back, breaking the formation.
