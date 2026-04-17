@@ -281,9 +281,10 @@ interface DragInfo {
 interface UnitLayerProps {
   onUnitMouseDown: () => void;
   onUnitHover: (id: string | null) => void;
+  onDragStatusChange: (active: boolean) => void;
 }
 
-function UnitLayer({ onUnitMouseDown, onUnitHover }: UnitLayerProps) {
+function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLayerProps) {
   const units = useStore(s => s.units);
   const unitsVisible = useStore(s => s.layers.units);
   const selectedIds = useStore(s => s.selectedIds);
@@ -296,6 +297,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover }: UnitLayerProps) {
   const pushHistory = useStore(s => s.pushHistory);
 
   const dragStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const isDraggingRef = useRef(false); // suppresses hover events during any drag
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
 
   if (!unitsVisible) return null;
@@ -303,6 +305,9 @@ function UnitLayer({ onUnitMouseDown, onUnitHover }: UnitLayerProps) {
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
 
   const handleDragStart = (u: UnitToken) => {
+    isDraggingRef.current = true;
+    onDragStatusChange(true);
+    onUnitHover(null); // clear any hover preview immediately
     // Use getState() so we always read the latest selectedIds, not a stale closure
     const { selectedIds: ids, units: currentUnits } = useStore.getState();
     const map = new Map<string, { x: number; y: number }>();
@@ -349,6 +354,8 @@ function UnitLayer({ onUnitMouseDown, onUnitHover }: UnitLayerProps) {
     // position in the snapshot → redo would snap it back to the wrong spot.
     upd(u.id, { x: newX, y: newY });
     ph();
+    isDraggingRef.current = false;
+    onDragStatusChange(false);
     setDragInfo(null);
   };
 
@@ -380,7 +387,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover }: UnitLayerProps) {
             x={u.x} y={u.y}
             rotation={u.rotation}
             draggable={draggable}
-            onMouseEnter={() => { if (activeTool === 'select') onUnitHover(u.id); }}
+            onMouseEnter={() => { if (activeTool === 'select' && !isDraggingRef.current) onUnitHover(u.id); }}
             onMouseLeave={() => onUnitHover(null)}
             onMouseDown={() => { if (activeTool === 'select') onUnitMouseDown(); }}
             onDragStart={() => handleDragStart(u)}
@@ -554,6 +561,8 @@ export function BoardCanvas() {
   const isPolyDrawing = useRef(false);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
   const unitHeldRef = useRef(false);
+  // Tracks whether a Konva drag is actively in progress (for spin-vs-orbit decision)
+  const isDraggingUnitRef = useRef(false);
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -874,13 +883,19 @@ export function BoardCanvas() {
         const delta = e.evt.deltaY > 0 ? ROTATE_STEP : -ROTATE_STEP;
         const selected = ids.map(id => currentUnits.find(u => u.id === id)).filter(Boolean) as typeof currentUnits;
 
-        if (selected.length === 1) {
-          // Single unit — spin base in place
-          const unit = selected[0];
-          upd(unit.id, { rotation: (unit.rotation + delta + 360) % 360 });
+        if (isDraggingUnitRef.current) {
+          // DRAG + SCROLL: unit is being moved and rotated simultaneously.
+          // Konva owns the primary unit's x/y via its drag system, so we must
+          // ONLY update rotation here. Changing x/y would fight Konva and corrupt
+          // positions. Each unit spins around its own center.
+          selected.forEach(unit => {
+            upd(unit.id, { rotation: (unit.rotation + delta + 360) % 360 });
+          });
+        } else if (selected.length === 1) {
+          // Single unit held (not dragging): spin base in place
+          upd(selected[0].id, { rotation: (selected[0].rotation + delta + 360) % 360 });
         } else {
-          // Group — orbit all positions around the group's centroid,
-          // and also spin each unit's own base by the same delta
+          // Group held (not dragging): orbit all positions around the group centroid
           const cx = selected.reduce((s, u) => s + u.x, 0) / selected.length;
           const cy = selected.reduce((s, u) => s + u.y, 0) / selected.length;
           const rad = (delta * Math.PI) / 180;
@@ -952,6 +967,7 @@ export function BoardCanvas() {
         <UnitLayer
           onUnitMouseDown={() => { unitHeldRef.current = true; }}
           onUnitHover={setHoveredUnitId}
+          onDragStatusChange={(active) => { isDraggingUnitRef.current = active; }}
         />
 
         {/* Drawing preview */}
