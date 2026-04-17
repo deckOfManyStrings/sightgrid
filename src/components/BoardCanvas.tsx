@@ -594,8 +594,6 @@ export function BoardCanvas() {
   const isPolyDrawing = useRef(false);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
   const unitHeldRef = useRef(false);
-  // Tracks whether a Konva drag is actively in progress (for spin-vs-orbit decision)
-  const isDraggingUnitRef = useRef(false);
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -898,13 +896,9 @@ export function BoardCanvas() {
     }
   }, [activeTool, drawState, addTerrain]);
 
-  // Release unit-hold on global mouseup; also safety-clear the drag flag so
-  // isDraggingUnitRef can never get stuck true after the mouse is released.
+  // Release unit-hold on global mouseup
   useEffect(() => {
-    const onUp = () => {
-      unitHeldRef.current = false;
-      isDraggingUnitRef.current = false;
-    };
+    const onUp = () => { unitHeldRef.current = false; };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
@@ -920,16 +914,8 @@ export function BoardCanvas() {
         const delta = e.evt.deltaY > 0 ? ROTATE_STEP : -ROTATE_STEP;
         const selected = ids.map(id => currentUnits.find(u => u.id === id)).filter(Boolean) as typeof currentUnits;
 
-        if (isDraggingUnitRef.current) {
-          // DRAG + SCROLL: unit is being moved and rotated simultaneously.
-          // Konva owns the primary unit's x/y via its drag system, so we must
-          // ONLY update rotation here. Changing x/y would fight Konva and corrupt
-          // positions. Each unit spins around its own center.
-          selected.forEach(unit => {
-            upd(unit.id, { rotation: (unit.rotation + delta + 360) % 360 });
-          });
-        } else if (selected.length === 1) {
-          // Single unit held (not dragging): spin base in place
+        if (selected.length === 1) {
+          // Single unit: spin base in place
           upd(selected[0].id, { rotation: (selected[0].rotation + delta + 360) % 360 });
         } else {
           // Group held (not dragging): orbit all positions around the group centroid
@@ -1004,7 +990,8 @@ export function BoardCanvas() {
         <UnitLayer
           onUnitMouseDown={() => { unitHeldRef.current = true; }}
           onUnitHover={setHoveredUnitId}
-          onDragStatusChange={(active) => { isDraggingUnitRef.current = active; }}
+          onDragPrimaryChange={(id) => { dragPrimaryIdRef.current = id; }}
+          lastPrimaryPosRef={lastPrimaryPosRef}
         />
 
         {/* Drawing preview */}
