@@ -279,7 +279,7 @@ interface DragInfo {
 }
 
 interface UnitLayerProps {
-  onUnitMouseDown: () => void;
+  onUnitMouseDown: (id: string) => void;
   onUnitHover: (id: string | null) => void;
   onDragPrimaryChange: (id: string | null) => void;
   lastPrimaryPosRef: React.MutableRefObject<{ x: number; y: number } | null>;
@@ -396,7 +396,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
             draggable={draggable}
             onMouseEnter={() => { if (activeTool === 'select' && !isDraggingRef.current) onUnitHover(u.id); }}
             onMouseLeave={() => onUnitHover(null)}
-            onMouseDown={() => { if (activeTool === 'select') onUnitMouseDown(); }}
+            onMouseDown={() => { if (activeTool === 'select') onUnitMouseDown(u.id); }}
             onDragStart={() => handleDragStart(u)}
             onDragMove={(e) => handleDragMove(u, e)}
             onDragEnd={(e) => handleDragEnd(u, e)}
@@ -567,7 +567,7 @@ export function BoardCanvas() {
   const rafId = useRef<number | null>(null);
   const isPolyDrawing = useRef(false);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
-  const unitHeldRef = useRef(false);
+  const heldUnitIdRef = useRef<string | null>(null);
   // Tracks the ID of the unit currently being Konva-dragged
   const dragPrimaryIdRef = useRef<string | null>(null);
   // Tracks primary's last known Konva position for incremental drag-move deltas.
@@ -779,10 +779,10 @@ export function BoardCanvas() {
     }
 
     // Selection box start — clear selection whenever we click anything that is NOT a unit.
-    // unitHeldRef is set true by the unit Group's onMouseDown BEFORE this Stage handler fires
+    // heldUnitIdRef is set by the unit Group's onMouseDown BEFORE this Stage handler fires
     // (Konva bubbles child → parent → stage), so it reliably tells us if a unit was hit.
     if (activeTool === 'select' && !e.evt.shiftKey) {
-      if (!unitHeldRef.current) {
+      if (!heldUnitIdRef.current) {
         selBoxStart.current = pos;
         clearSelection();
       }
@@ -877,7 +877,7 @@ export function BoardCanvas() {
 
   // Release unit-hold on global mouseup
   useEffect(() => {
-    const onUp = () => { unitHeldRef.current = false; };
+    const onUp = () => { heldUnitIdRef.current = null; };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
@@ -886,9 +886,9 @@ export function BoardCanvas() {
     e.evt.preventDefault();
 
     // Scroll-to-rotate: when holding mouse on a unit, wheel rotates selected units
-    if (unitHeldRef.current) {
+    if (heldUnitIdRef.current) {
       const { selectedIds: ids, units: currentUnits, updateUnit: upd } = useStore.getState();
-      if (ids.length > 0) {
+      if (ids.length > 0 && ids.includes(heldUnitIdRef.current)) {
         const ROTATE_STEP = 5; // degrees per scroll tick
         const delta = e.evt.deltaY > 0 ? ROTATE_STEP : -ROTATE_STEP;
         const selected = ids.map(id => currentUnits.find(u => u.id === id)).filter(Boolean) as typeof currentUnits;
@@ -897,15 +897,45 @@ export function BoardCanvas() {
           // Single unit: spin base in place
           upd(selected[0].id, { rotation: (selected[0].rotation + delta + 360) % 360 });
         } else {
-          // Group held (not dragging): orbit all positions around the group centroid
-          const cx = selected.reduce((s, u) => s + u.x, 0) / selected.length;
-          const cy = selected.reduce((s, u) => s + u.y, 0) / selected.length;
+          // Group rotation
+          let cx = 0, cy = 0;
+          if (isDraggingRef.current) {
+            // When actively dragging, Konva rigidly locks the primary unit to the mouse pointer.
+            // If we rotate the group around the centroid, the primary unit would mathematically orbit 
+            // away from the mouse cursor, but Konva would snap it back, breaking the formation.
+            // Pivoting around the grabbed unit completely prevents this visual conflict and mathematically 
+            // rotates the shape exactly as intended.
+            const primaryId = heldUnitIdRef.current;
+            const primaryUnit = selected.find(u => u.id === primaryId);
+            if (!primaryUnit) return;
+            cx = (primaryId === dragPrimaryIdRef.current && lastPrimaryPosRef.current) 
+                  ? lastPrimaryPosRef.current.x 
+                  : primaryUnit.x;
+            cy = (primaryId === dragPrimaryIdRef.current && lastPrimaryPosRef.current) 
+                  ? lastPrimaryPosRef.current.y 
+                  : primaryUnit.y;
+          } else {
+            // Not dragging (just holding click): rotate around group centroid safely
+            cx = selected.reduce((s, u) => s + u.x, 0) / selected.length;
+            cy = selected.reduce((s, u) => s + u.y, 0) / selected.length;
+          }
+
           const rad = (delta * Math.PI) / 180;
           const cos = Math.cos(rad);
           const sin = Math.sin(rad);
+
           selected.forEach(unit => {
-            const dx = unit.x - cx;
-            const dy = unit.y - cy;
+            // Ensure we use the exact active Konva coordinate for the primary piece if it's dragging!
+            const realX = (unit.id === dragPrimaryIdRef.current && lastPrimaryPosRef.current) 
+                            ? lastPrimaryPosRef.current.x 
+                            : unit.x;
+            const realY = (unit.id === dragPrimaryIdRef.current && lastPrimaryPosRef.current) 
+                            ? lastPrimaryPosRef.current.y 
+                            : unit.y;
+
+            const dx = realX - cx;
+            const dy = realY - cy;
+            
             upd(unit.id, {
               x: cx + dx * cos - dy * sin,
               y: cy + dx * sin + dy * cos,
@@ -967,7 +997,7 @@ export function BoardCanvas() {
         <LosLayer />
         <HoverLosLayer hoveredUnitId={hoveredUnitId} />
         <UnitLayer
-          onUnitMouseDown={() => { unitHeldRef.current = true; }}
+          onUnitMouseDown={(id) => { heldUnitIdRef.current = id; }}
           onUnitHover={setHoveredUnitId}
           onDragPrimaryChange={(id) => { dragPrimaryIdRef.current = id; }}
           lastPrimaryPosRef={lastPrimaryPosRef}
