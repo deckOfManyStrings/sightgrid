@@ -300,6 +300,19 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLay
   const isDraggingRef = useRef(false); // suppresses hover events during any drag
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
 
+  // Safety clear on global mouseup — ensures isDraggingRef never gets stuck true
+  // even if onDragEnd is not reliably fired (e.g. drag cancelled mid-gesture).
+  useEffect(() => {
+    const onUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        onDragStatusChange(false);
+      }
+    };
+    window.addEventListener('mouseup', onUp);
+    return () => window.removeEventListener('mouseup', onUp);
+  }, [onDragStatusChange]);
+
   if (!unitsVisible) return null;
 
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
@@ -563,6 +576,10 @@ export function BoardCanvas() {
   const unitHeldRef = useRef(false);
   // Tracks whether a Konva drag is actively in progress (for spin-vs-orbit decision)
   const isDraggingUnitRef = useRef(false);
+
+  // Require 8px movement before Konva starts a drag — prevents accidental drag
+  // starts when the user holds mouse to scroll-rotate with a tiny hand wobble.
+  Konva.dragMinDistance = 8;
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -865,9 +882,13 @@ export function BoardCanvas() {
     }
   }, [activeTool, drawState, addTerrain]);
 
-  // Release unit-hold on global mouseup
+  // Release unit-hold on global mouseup; also safety-clear the drag flag so
+  // isDraggingUnitRef can never get stuck true after the mouse is released.
   useEffect(() => {
-    const onUp = () => { unitHeldRef.current = false; };
+    const onUp = () => {
+      unitHeldRef.current = false;
+      isDraggingUnitRef.current = false;
+    };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
