@@ -281,10 +281,10 @@ interface DragInfo {
 interface UnitLayerProps {
   onUnitMouseDown: () => void;
   onUnitHover: (id: string | null) => void;
-  onDragPrimaryChange: (id: string | null) => void;
+  onDragStatusChange: (active: boolean) => void;
 }
 
-function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLayerProps) {
+function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLayerProps) {
   const units = useStore(s => s.units);
   const unitsVisible = useStore(s => s.layers.units);
   const selectedIds = useStore(s => s.selectedIds);
@@ -297,16 +297,22 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
   const pushHistory = useStore(s => s.pushHistory);
 
   const dragStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const lastPrimaryPos = useRef<{ x: number; y: number } | null>(null); // tracks primary's Konva pos for incremental delta
-  const isDraggingRef = useRef(false); // suppresses hover during any drag
+  const isDraggingRef = useRef(false);          // suppresses hover during any drag
+  const isDraggingSignificantRef = useRef(false); // true once drag exceeds 20px — triggers spin-only
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
 
   // Safety clear on global mouseup — ensures isDraggingRef never gets stuck true
+  // even if onDragEnd is not reliably fired (e.g. drag cancelled mid-gesture).
   useEffect(() => {
-    const onUp = () => { isDraggingRef.current = false; };
+    const onUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        onDragStatusChange(false);
+      }
+    };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
-  }, []);
+  }, [onDragStatusChange]);
 
   if (!unitsVisible) return null;
 
@@ -314,10 +320,12 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
 
   const handleDragStart = (u: UnitToken) => {
     isDraggingRef.current = true;
-    lastPrimaryPos.current = { x: u.x, y: u.y };
-    onDragPrimaryChange(u.id);
+    isDraggingSignificantRef.current = false; // reset — will flip true once mouse moves >20px
+    // NOTE: onDragStatusChange(true) is NOT called here. It fires in handleDragMove
+    // only after the drag has moved >20px, so tiny hold-wobbles don't lock into
+    // spin-only mode and break group orbit.
     onUnitHover(null); // clear any hover preview immediately
-    // Record start positions for distance label display
+    // Use getState() so we always read the latest selectedIds, not a stale closure
     const { selectedIds: ids, units: currentUnits } = useStore.getState();
     const map = new Map<string, { x: number; y: number }>();
     const groupIds = ids.includes(u.id) ? ids : [u.id];
@@ -334,24 +342,35 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
     const cx = e.target.x();
     const cy = e.target.y();
 
-    // Incremental delta: compute movement since last frame, apply to secondaries'
-    // CURRENT store positions (not stale start positions). This preserves any
-    // orbit rotation changes that happened between drag move events.
-    const lastPos = lastPrimaryPos.current;
-    lastPrimaryPos.current = { x: cx, y: cy };
+    // Activate spin-only mode once the drag has moved a meaningful distance.
+    // This prevents tiny hold-wobbles from locking into spin-only and breaking
+    // group orbit on the NEXT hold-rotate interaction.
+    if (!isDraggingSignificantRef.current) {
+      const startPos = dragStartPositions.current.get(u.id);
+      if (startPos) {
+        const ddx = cx - startPos.x;
+        const ddy = cy - startPos.y;
+        if (Math.sqrt(ddx * ddx + ddy * ddy) > 20) {
+          isDraggingSignificantRef.current = true;
+          onDragStatusChange(true);
+        }
+      }
+    }
 
     // Update the distance label
     setDragInfo(prev => prev ? { ...prev, currentX: cx, currentY: cy } : null);
 
-    if (lastPos) {
-      const ddx = cx - lastPos.x;
-      const ddy = cy - lastPos.y;
-      const { selectedIds: ids, units: currentUnits, updateUnit: upd } = useStore.getState();
-      if (ids.includes(u.id) && ids.length > 1) {
+    // Move ALL other selected units live so the whole group moves together
+    const { selectedIds: ids, updateUnit: upd } = useStore.getState();
+    if (ids.includes(u.id) && ids.length > 1) {
+      const startPos = dragStartPositions.current.get(u.id);
+      if (startPos) {
+        const dx = cx - startPos.x;
+        const dy = cy - startPos.y;
         ids.forEach(id => {
-          if (id === u.id) return; // primary handled by Konva
-          const cu = currentUnits.find(o => o.id === id);
-          if (cu) upd(id, { x: cu.x + ddx, y: cu.y + ddy });
+          if (id === u.id) return; // dragged unit is handled by Konva
+          const start = dragStartPositions.current.get(id);
+          if (start) upd(id, { x: start.x + dx, y: start.y + dy });
         });
       }
     }
@@ -361,11 +380,15 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
     const newX = e.target.x();
     const newY = e.target.y();
     const { pushHistory: ph, updateUnit: upd } = useStore.getState();
+    // Commit the primary unit's final position FIRST so pushHistory captures
+    // the complete post-drag state (all units at new positions).
+    // Previously ph() ran before upd(), leaving the primary at its old store
+    // position in the snapshot → redo would snap it back to the wrong spot.
     upd(u.id, { x: newX, y: newY });
     ph();
     isDraggingRef.current = false;
-    lastPrimaryPos.current = null;
-    onDragPrimaryChange(null);
+    isDraggingSignificantRef.current = false;
+    onDragStatusChange(false);
     setDragInfo(null);
   };
 
@@ -394,7 +417,6 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
         return (
           <Group
             key={u.id}
-            id={`unit-${u.id}`}
             x={u.x} y={u.y}
             rotation={u.rotation}
             draggable={draggable}
@@ -412,7 +434,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
                 ? <Circle radius={rW + 4} fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} />
                 : isRect
                   ? <Rect x={-(rW + 4)} y={-(rH + 4)} width={(rW + 4) * 2} height={(rH + 4) * 2}
-                      fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} cornerRadius={4} />
+                    fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} cornerRadius={4} />
                   : <Ellipse radiusX={rW + 4} radiusY={rH + 4} fill="rgba(165,243,252,0.15)" stroke="#a5f3fc" strokeWidth={2} />
             )}
 
@@ -421,10 +443,10 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange }: UnitLa
               ? <Circle radius={rW} fill={u.color} stroke={u.color} strokeWidth={1.5} />
               : isRect
                 ? <Rect
-                    x={-rW} y={-rH} width={rW * 2} height={rH * 2}
-                    fill={u.color} stroke={u.color} strokeWidth={1.5}
-                    cornerRadius={5}
-                  />
+                  x={-rW} y={-rH} width={rW * 2} height={rH * 2}
+                  fill={u.color} stroke={u.color} strokeWidth={1.5}
+                  cornerRadius={5}
+                />
                 : <Ellipse radiusX={rW} radiusY={rH} fill={u.color} stroke={u.color} strokeWidth={1.5} />
             }
 
@@ -572,8 +594,8 @@ export function BoardCanvas() {
   const isPolyDrawing = useRef(false);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
   const unitHeldRef = useRef(false);
-  // Tracks the ID of the unit currently being Konva-dragged
-  const dragPrimaryIdRef = useRef<string | null>(null);
+  // Tracks whether a Konva drag is actively in progress (for spin-vs-orbit decision)
+  const isDraggingUnitRef = useRef(false);
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -876,9 +898,13 @@ export function BoardCanvas() {
     }
   }, [activeTool, drawState, addTerrain]);
 
-  // Release unit-hold on global mouseup
+  // Release unit-hold on global mouseup; also safety-clear the drag flag so
+  // isDraggingUnitRef can never get stuck true after the mouse is released.
   useEffect(() => {
-    const onUp = () => { unitHeldRef.current = false; };
+    const onUp = () => {
+      unitHeldRef.current = false;
+      isDraggingUnitRef.current = false;
+    };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
@@ -894,42 +920,32 @@ export function BoardCanvas() {
         const delta = e.evt.deltaY > 0 ? ROTATE_STEP : -ROTATE_STEP;
         const selected = ids.map(id => currentUnits.find(u => u.id === id)).filter(Boolean) as typeof currentUnits;
 
-        if (selected.length === 1) {
-          // Single unit: spin base in place
+        if (isDraggingUnitRef.current) {
+          // DRAG + SCROLL: unit is being moved and rotated simultaneously.
+          // Konva owns the primary unit's x/y via its drag system, so we must
+          // ONLY update rotation here. Changing x/y would fight Konva and corrupt
+          // positions. Each unit spins around its own center.
+          selected.forEach(unit => {
+            upd(unit.id, { rotation: (unit.rotation + delta + 360) % 360 });
+          });
+        } else if (selected.length === 1) {
+          // Single unit held (not dragging): spin base in place
           upd(selected[0].id, { rotation: (selected[0].rotation + delta + 360) % 360 });
         } else {
-          // Group: orbit all positions around centroid.
-          // During a drag the primary's store position may be stale; read its
-          // actual Konva position via the stage node for an accurate centroid.
-          const primaryId = dragPrimaryIdRef.current;
-          const primaryNode = primaryId
-            ? stageRef.current?.findOne(`#unit-${primaryId}`) as Konva.Group | undefined
-            : undefined;
-          const getPos = (u: (typeof selected)[0]) =>
-            (primaryId && u.id === primaryId && primaryNode)
-              ? { x: primaryNode.x(), y: primaryNode.y() }
-              : { x: u.x, y: u.y };
-
-          const cx = selected.reduce((s, u) => s + getPos(u).x, 0) / selected.length;
-          const cy = selected.reduce((s, u) => s + getPos(u).y, 0) / selected.length;
+          // Group held (not dragging): orbit all positions around the group centroid
+          const cx = selected.reduce((s, u) => s + u.x, 0) / selected.length;
+          const cy = selected.reduce((s, u) => s + u.y, 0) / selected.length;
           const rad = (delta * Math.PI) / 180;
           const cos = Math.cos(rad);
           const sin = Math.sin(rad);
           selected.forEach(unit => {
-            const pos = getPos(unit);
-            const dx = pos.x - cx;
-            const dy = pos.y - cy;
-            const newX = cx + dx * cos - dy * sin;
-            const newY = cy + dx * sin + dy * cos;
-            const newRot = (unit.rotation + delta + 360) % 360;
-            if (primaryId && unit.id === primaryId) {
-              // Primary during drag: Konva owns x/y — updating store x/y causes
-              // React to fight Konva's drag system and teleport the unit.
-              // Only update rotation; secondary incremental deltas handle formation.
-              upd(unit.id, { rotation: newRot });
-            } else {
-              upd(unit.id, { x: newX, y: newY, rotation: newRot });
-            }
+            const dx = unit.x - cx;
+            const dy = unit.y - cy;
+            upd(unit.id, {
+              x: cx + dx * cos - dy * sin,
+              y: cy + dx * sin + dy * cos,
+              rotation: (unit.rotation + delta + 360) % 360,
+            });
           });
         }
         return; // don't zoom
@@ -988,7 +1004,7 @@ export function BoardCanvas() {
         <UnitLayer
           onUnitMouseDown={() => { unitHeldRef.current = true; }}
           onUnitHover={setHoveredUnitId}
-          onDragPrimaryChange={(id) => { dragPrimaryIdRef.current = id; }}
+          onDragStatusChange={(active) => { isDraggingUnitRef.current = active; }}
         />
 
         {/* Drawing preview */}
