@@ -91,6 +91,29 @@ const defaultTemplate: UnitTemplate = {
   placementCount: 1,
 };
 
+// INITIAL BOARD STATE FOR DEMONSTRATION
+const b_id_center = uuidv4();
+const INITIAL_TERRAIN: TerrainObject[] = [
+  { id: uuidv4(), shape: 'rect', points: [460, 160, 610, 160, 610, 410, 460, 410], tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false },
+  { id: uuidv4(), shape: 'rect', points: [330, 410, 460, 410, 460, 560, 330, 560], tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false },
+];
+
+const INITIAL_UNITS: UnitToken[] = [
+  // Blue group (MSU)
+  { id: b_id_center, name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: true, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 170, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 290, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 220, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 340, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+
+  // Green group (Orks)
+  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 420, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+  { id: uuidv4(), name: 'Orks', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false },
+];
+
 // Store
 export const useStore = create<AppStore>()(
   immer((set, get) => ({
@@ -117,7 +140,7 @@ export const useStore = create<AppStore>()(
       set((s) => { s.canvasWidth = w; s.canvasHeight = h; }),
 
     // Terrain
-    terrain: [],
+    terrain: INITIAL_TERRAIN,
     addTerrain: (t) => {
       get().pushHistory();
       set((s) => { s.terrain.push(t); });
@@ -133,7 +156,7 @@ export const useStore = create<AppStore>()(
     },
 
     // Units
-    units: [],
+    units: INITIAL_UNITS,
     addUnit: (u) => {
       get().pushHistory();
       set((s) => { s.units.push(u); });
@@ -162,7 +185,7 @@ export const useStore = create<AppStore>()(
     },
 
     // Selection
-    selectedIds: [],
+    selectedIds: [b_id_center],
     setSelectedIds: (ids) => set((s) => { s.selectedIds = ids; }),
     addToSelection: (id) => set((s) => { if (!s.selectedIds.includes(id)) s.selectedIds.push(id); }),
     toggleSelection: (id) =>

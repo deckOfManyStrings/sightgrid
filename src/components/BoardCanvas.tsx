@@ -61,10 +61,10 @@ function TerrainLayer() {
   if (!terrainVisible) return null;
 
   const tagColor = (t: TerrainObject) => {
-    if (t.tags.includes('blocks_los')) return t.color || '#6b7280';
-    if (t.tags.includes('obscuring')) return '#b45309';
-    if (t.tags.includes('difficult')) return '#065f46';
-    return '#374151';
+    if (t.tags.includes('blocks_los')) return t.color || '#475569';
+    if (t.tags.includes('obscuring')) return '#ea580c';
+    if (t.tags.includes('difficult')) return '#16a34a';
+    return '#334155';
   };
 
   return (
@@ -74,9 +74,6 @@ function TerrainLayer() {
         const color = tagColor(t);
         const commonProps = {
           opacity: t.opacity,
-          stroke: isSelected ? '#a5f3fc' : color,
-          strokeWidth: isSelected ? 2.5 : 1.5,
-          dash: t.tags.includes('decorative') ? [6, 3] : undefined,
           onClick: () => {
             if (activeTool === 'select') setSelectedIds([t.id]);
           },
@@ -97,18 +94,44 @@ function TerrainLayer() {
               points={t.points}
               fill={undefined}
               stroke={isSelected ? '#a5f3fc' : color}
-              strokeWidth={6}
+              strokeWidth={isSelected ? 6 : 4}
+              dash={t.tags.includes('decorative') ? [8, 6] : undefined}
               lineCap="round"
+              shadowColor="#000"
+              shadowBlur={8}
+              shadowOffset={{ x: 2, y: 3 }}
+              shadowOpacity={0.6}
+              hitStrokeWidth={15}
             />
           );
         }
 
         return (
-          <Line key={t.id} {...commonProps}
-            points={t.points}
-            closed={true}
-            fill={color + '40'}
-          />
+          <Group key={t.id} {...commonProps}>
+            <Line
+              points={t.points}
+              closed={true}
+              fill={color + '70'} // 44% opacity to make it more distinct from grid
+              stroke={isSelected ? '#a5f3fc' : color}
+              strokeWidth={isSelected ? 3 : 2}
+              dash={t.tags.includes('decorative') ? [8, 6] : undefined}
+              shadowColor="#000"
+              shadowBlur={12}
+              shadowOffset={{ x: 3, y: 5 }}
+              shadowOpacity={0.6}
+            />
+            {/* Inner highlight line to simulate a slight 3D bevelling effect */}
+            <Line
+              points={t.points}
+              closed={true}
+              fill={undefined}
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth={1}
+              offsetX={-1}
+              offsetY={-1}
+              listening={false}
+            />
+          </Group>
         );
       })}
     </Layer>
@@ -568,6 +591,9 @@ export function BoardCanvas() {
   const isPolyDrawing = useRef(false);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
   const heldUnitIdRef = useRef<string | null>(null);
+  // Absorb momentum scroll after rotating
+  const isRotatingRef = useRef(false);
+  const rotateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks the ID of the unit currently being Konva-dragged
   const dragPrimaryIdRef = useRef<string | null>(null);
   // Tracks primary's last known Konva position for incremental drag-move deltas.
@@ -953,8 +979,24 @@ export function BoardCanvas() {
             });
           });
         }
+        
+        isRotatingRef.current = true;
+        if (rotateTimeoutRef.current !== null) clearTimeout(rotateTimeoutRef.current);
+        rotateTimeoutRef.current = setTimeout(() => {
+          isRotatingRef.current = false;
+        }, 300);
+
         return; // don't zoom
       }
+    }
+
+    // Suppress zoom if we are currently absorbing momentum scroll from a recent rotation
+    if (isRotatingRef.current) {
+      if (rotateTimeoutRef.current !== null) clearTimeout(rotateTimeoutRef.current);
+      rotateTimeoutRef.current = setTimeout(() => {
+        isRotatingRef.current = false;
+      }, 300);
+      return;
     }
 
     // Normal zoom

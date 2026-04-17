@@ -105,15 +105,6 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
 
       {divider()}
 
-      {tbtn('↖', 'Select (V)', () => setActiveTool('select'), activeTool === 'select')}
-      {tbtn('⬤', 'Place Unit (U)', () => setActiveTool('place_unit'), activeTool === 'place_unit')}
-      {tbtn('╱', 'Line Wall (L)', () => setActiveTool('terrain_line'), activeTool === 'terrain_line')}
-      {tbtn('▭', 'Rect Terrain (R)', () => setActiveTool('terrain_rect'), activeTool === 'terrain_rect')}
-      {tbtn('⬡', 'Polygon (P)', () => setActiveTool('terrain_polygon'), activeTool === 'terrain_polygon')}
-      {tbtn('📏', 'Ruler (M)', () => setActiveTool('ruler'), activeTool === 'ruler')}
-
-      {divider()}
-
       {tbtn(snapEnabled ? '🔒' : '🔓', `Snap: ${snapEnabled ? 'On' : 'Off'}`, toggleSnap, snapEnabled)}
 
       {divider()}
