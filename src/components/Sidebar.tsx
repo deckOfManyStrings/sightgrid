@@ -32,6 +32,7 @@ const toolGroups = [
     label: 'Markup',
     tools: [
       { id: 'draw' as ActiveTool, icon: '✎', label: 'Draw', tooltip: 'Freehand Draw (D)' },
+      { id: 'eraser' as ActiveTool, icon: '⌫', label: 'Eraser', tooltip: 'Erase Drawings (E)' },
     ],
   },
 ];

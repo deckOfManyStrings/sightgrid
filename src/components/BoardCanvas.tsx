@@ -148,6 +148,7 @@ function DrawingLayer() {
   const activeTool = useStore(s => s.activeTool);
   const updateDrawing = useStore(s => s.updateDrawing);
   const setSelectedIds = useStore(s => s.setSelectedIds);
+  const deleteDrawings = useStore(s => s.deleteDrawings);
 
   if (!layerStates.drawings.visible) return null;
 
@@ -155,6 +156,19 @@ function DrawingLayer() {
     <Layer>
       {drawings.map((d) => {
         const isSelected = selectedIds.includes(d.id);
+
+        const erase = () => {
+          if (activeTool === 'eraser' && !layerStates.drawings.locked) {
+            deleteDrawings([d.id]);
+          }
+        };
+
+        const handleDragErase = (e: any) => {
+          if (e.evt?.buttons === 1 || e.type === 'touchmove') {
+            erase();
+          }
+        };
+
         return (
           <Line
             key={d.id}
@@ -167,7 +181,11 @@ function DrawingLayer() {
             lineJoin="round"
             hitStrokeWidth={Math.max(15, d.strokeWidth + 5)}
             draggable={activeTool === 'select' && !layerStates.drawings.locked}
+            onPointerDown={erase}
+            onPointerOver={handleDragErase}
+            onTouchMove={handleDragErase}
             onClick={() => {
+              if (activeTool === 'eraser') erase();
               if (activeTool === 'select' && !layerStates.drawings.locked) setSelectedIds([d.id]);
             }}
             onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
@@ -1249,6 +1267,7 @@ function getCursor(tool: string): string {
     case 'terrain_rect':
     case 'terrain_polygon': return 'crosshair';
     case 'ruler': return 'crosshair';
+    case 'eraser': return 'cell';
     default: return 'default';
   }
 }

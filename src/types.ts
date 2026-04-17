@@ -9,7 +9,8 @@ export type ActiveTool =
   | 'terrain_polygon'
   | 'ruler'
   | 'movement_radius'
-  | 'draw';
+  | 'draw'
+  | 'eraser';
 
 export type LayerName = 'units' | 'terrain' | 'drawings';
 
