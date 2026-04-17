@@ -262,9 +262,7 @@ export const useStore = create<AppStore>()(
       });
     },
     pasteClipboard: (centerPos) => {
-      const { clipboardUnits } = get();
-      const clipboardTerrain = (get() as any).clipboardTerrain || [];
-      const clipboardDrawings = (get() as any).clipboardDrawings || [];
+      const { clipboardUnits, clipboardTerrain = [], clipboardDrawings = [] } = get();
       
       if (clipboardUnits.length === 0 && clipboardTerrain.length === 0 && clipboardDrawings.length === 0) return;
       get().pushHistory();
@@ -274,8 +272,8 @@ export const useStore = create<AppStore>()(
         let cx = 0, cy = 0;
         let totalCount = 0;
         
-        clipboardUnits.forEach((u) => { cx += u.x; cy += u.y; totalCount++; });
-        clipboardTerrain.forEach((t) => {
+        clipboardUnits.forEach((u: UnitToken) => { cx += u.x; cy += u.y; totalCount++; });
+        clipboardTerrain.forEach((t: TerrainObject) => {
           let tX = 0, tY = 0;
           for (let i = 0; i < t.points.length; i += 2) { tX += t.points[i]; tY += t.points[i+1]; }
           if (t.points.length > 0) {
@@ -283,7 +281,7 @@ export const useStore = create<AppStore>()(
             totalCount++;
           }
         });
-        clipboardDrawings.forEach((d) => {
+        clipboardDrawings.forEach((d: DrawingObject) => {
           let dX = 0, dY = 0;
           for (let i = 0; i < d.points.length; i += 2) { dX += d.points[i]; dY += d.points[i+1]; }
           if (d.points.length > 0) {
@@ -305,17 +303,17 @@ export const useStore = create<AppStore>()(
           s.units.push({ ...u, id: newId, x: u.x + (centerPos ? dx : 20), y: u.y + (centerPos ? dy : 20) });
         });
         
-        clipboardTerrain.forEach((t) => {
+        clipboardTerrain.forEach((t: TerrainObject) => {
           const newId = uuidv4();
           newIds.push(newId);
-          const newPts = t.points.map((p, i) => p + (centerPos ? (i % 2 === 0 ? dx : dy) : 20));
+          const newPts = t.points.map((p: number, i: number) => p + (centerPos ? (i % 2 === 0 ? dx : dy) : 20));
           s.terrain.push({ ...t, id: newId, points: newPts });
         });
 
-        clipboardDrawings.forEach((d) => {
+        clipboardDrawings.forEach((d: DrawingObject) => {
           const newId = uuidv4();
           newIds.push(newId);
-          const newPts = d.points.map((p, i) => p + (centerPos ? (i % 2 === 0 ? dx : dy) : 20));
+          const newPts = d.points.map((p: number, i: number) => p + (centerPos ? (i % 2 === 0 ? dx : dy) : 20));
           s.drawings.push({ ...d, id: newId, points: newPts });
         });
 

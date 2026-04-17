@@ -824,6 +824,7 @@ export function BoardCanvas() {
           losEnabled: false,
           rangeInches: 24,
           locked: false,
+          layerId: useStore.getState().activeLayer,
         });
       } else {
         // Build a formation centered on the click point
@@ -851,6 +852,7 @@ export function BoardCanvas() {
           losEnabled: false,
           rangeInches: 24,
           locked: false,
+          layerId: useStore.getState().activeLayer,
         }));
         addUnitsBatch(newUnits);
       }
@@ -878,7 +880,7 @@ export function BoardCanvas() {
         const newPoints = [...drawState.points, pos.x, pos.y];
         addTerrain({
           id: uuidv4(), shape: 'line', points: newPoints,
-          tags: ['blocks_los'], color: '#6b7280', opacity: 0.9, locked: false,
+          tags: ['blocks_los'], color: '#6b7280', opacity: 0.9, locked: false, layerId: useStore.getState().activeLayer,
         });
         setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
       }
@@ -1019,7 +1021,7 @@ export function BoardCanvas() {
     if (activeTool === 'terrain_polygon' && drawState.drawing && drawState.points.length >= 6) {
       addTerrain({
         id: uuidv4(), shape: 'polygon', points: drawState.points,
-        tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false,
+        tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
       });
       setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
       isPolyDrawing.current = false;
