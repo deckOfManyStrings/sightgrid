@@ -2,14 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useStore, getPixelsPerInch, mmToPx as mmToPxUtil, pxToInches as pxToInchesUtil } from '../store';
 import { HexColorPicker } from 'react-colorful';
 import { BASE_SIZES, UNIT_COLORS } from '../constants';
-import { useAuth } from '../contexts/AuthContext';
-
-interface InspectorProps {
-  onCloudSave: () => void;     // user is authed — open ScenariosPanel in save mode
-  onRequestAuth: () => void;   // user is not authed — open AuthModal
-}
-
-export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
+export function Inspector() {
   const selectedIds = useStore(s => s.selectedIds);
   const units = useStore(s => s.units);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -35,13 +28,6 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
   const toggleLayerLockObj = useStore(s => s.toggleLayerLockObj);
   const snapEnabled = useStore(s => s.snapEnabled);
   const toggleSnap = useStore(s => s.toggleSnap);
-  const exportJSON = useStore(s => s.exportJSON);
-  const importJSON = useStore(s => s.importJSON);
-  const clearBoard = useStore(s => s.clearBoard);
-  const resetView = useStore(s => s.resetView);
-  const { user } = useAuth();
-
-  const importRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplateColorPicker, setShowTemplateColorPicker] = useState(false);
   const [showGroupColorPicker, setShowGroupColorPicker] = useState(false);
@@ -78,26 +64,6 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
       setBoard({ mapImageUrl: url, mapImageWidth: img.width, mapImageHeight: img.height });
     };
     img.src = url;
-  }
-
-  function handleExport() {
-    const json = exportJSON();
-    const blob = new Blob([json], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'sightgrid-scenario.json';
-    a.click();
-  }
-
-  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      importJSON(text);
-    };
-    reader.readAsText(file);
   }
 
   function arrangeInRows(numRows: number) {
@@ -590,9 +556,10 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
         </>
       ))}
 
-      {/* Object Layers */}
-      {section('Object Layers', (
+      {/* Layers */}
+      {section('Layers', (
         <>
+          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>Objects</div>
           {(['units', 'terrain', 'drawings'] as const).map(k => {
             const st = layerStates[k];
             const isActive = activeLayer === k;
@@ -620,55 +587,15 @@ export function Inspector({ onCloudSave, onRequestAuth }: InspectorProps) {
               </div>
             );
           })}
-        </>
-      ))}
-
-      {/* Settings Layers */}
-      {section('System Layers', (
-        <>
+          
+          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, marginTop: 12 }}>System</div>
           {(Object.keys(layers) as (keyof typeof layers)[]).map(k => {
             if (k === 'units' || k === 'terrain') return null; // now managed by Object Layers
             return toggle(layers[k], () => toggleLayer(k), k.charAt(0).toUpperCase() + k.slice(1))
-          }
-          )}
+          })}
         </>
       ))}
 
-       {/* File */}
-      {section('File', (
-        <>
-          {/* Cloud save — only shown when logged in or to prompt sign-in */}
-          <button
-            onClick={() => user ? onCloudSave() : onRequestAuth()}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              width: '100%', padding: '7px 10px', borderRadius: 6, marginBottom: 8,
-              background: user
-                ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25))'
-                : 'rgba(51,65,85,0.4)',
-              border: user ? '1px solid rgba(99,102,241,0.5)' : '1px solid #334155',
-              color: user ? '#a5b4fc' : '#64748b',
-              fontSize: 11, fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            <span>&#x2601;</span>
-            <span>{user ? 'Save to Account' : 'Sign In to Save'}</span>
-          </button>
-          {btn('↓ Export JSON', handleExport, 'primary')}
-          <button onClick={() => importRef.current?.click()}
-            style={{
-              background: 'rgba(51,65,85,0.5)', color: '#94a3b8',
-              border: '1px solid #334155', borderRadius: 6,
-              padding: '5px 10px', fontSize: 11, cursor: 'pointer',
-              width: '100%', marginBottom: 4,
-            }}>
-            ↑ Import JSON
-          </button>
-          <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
-          {btn('⟳ Reset View', resetView)}
-          {btn('✕ Clear Board', clearBoard, 'danger')}
-        </>
-      ))}
     </div>
   );
 }

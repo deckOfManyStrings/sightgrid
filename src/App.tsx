@@ -32,14 +32,13 @@ function App() {
         <Toolbar
           onOpenScenarios={() => setScenariosPanelOpen(true)}
           onOpenAuth={() => setAuthModalOpen(true)}
+          onCloudSave={openSave}
+          onRequestAuth={requestCloudSave}
         />
         <div className="app-body">
           <Sidebar />
           <BoardCanvas />
-          <Inspector
-            onCloudSave={openSave}
-            onRequestAuth={requestCloudSave}
-          />
+          <Inspector />
         </div>
       </div>
 

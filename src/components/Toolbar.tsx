@@ -6,10 +6,11 @@ import { useAuth } from '../contexts/AuthContext';
 interface ToolbarProps {
   onOpenScenarios: () => void;
   onOpenAuth: () => void;
+  onCloudSave: () => void;
+  onRequestAuth: () => void;
 }
 
-export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
-  // Use individual selectors to avoid creating new object references
+export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAuth }: ToolbarProps) {
   const activeTool = useStore(s => s.activeTool);
   const setActiveTool = useStore(s => s.setActiveTool);
   const undo = useStore(s => s.undo);
@@ -27,15 +28,14 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
   const deleteUnits = useStore(s => s.deleteUnits);
   const deleteTerrain = useStore(s => s.deleteTerrain);
   const deleteDrawings = useStore(s => s.deleteDrawings);
-  const duplicateUnits = useStore(s => s.duplicateUnits);
   const boardWidthInches = useStore(s => s.board.widthInches);
   const canvasWidth = useStore(s => s.canvasWidth);
+  const clearBoard = useStore(s => s.clearBoard);
+  const resetView = useStore(s => s.resetView);
 
   const pixelsPerInch = getPixelsPerInch(canvasWidth, boardWidthInches);
-  const selectedCount = selectedIds.length;
   const { user } = useAuth();
 
-  // Deletes whatever is selected
   const deleteSelected = () => {
     const terrainIds = selectedIds.filter(id => terrain.some(t => t.id === id));
     const unitIds = selectedIds.filter(id => units.some(u => u.id === id));
@@ -45,6 +45,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
     if (unitIds.length > 0) deleteUnits(unitIds);
     if (drawingIds.length > 0) deleteDrawings(drawingIds);
   };
+
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -73,20 +74,40 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
 
   const tbtn = (
     icon: string, label: string, onClick: () => void,
-    active = false, variant: 'default' | 'danger' = 'default'
-  ) => (
-    <button title={label} onClick={onClick} style={{
-      background: active ? 'rgba(99,102,241,0.2)' : 'transparent',
-      border: `1px solid ${active ? '#6366f1' : 'transparent'}`,
-      color: variant === 'danger' ? '#fca5a5' : (active ? '#a5b4fc' : '#64748b'),
-      borderRadius: 6, padding: '4px 10px', cursor: 'pointer',
-      fontSize: 13, display: 'flex', alignItems: 'center', gap: 4,
-      whiteSpace: 'nowrap' as const, transition: 'all 0.15s',
-    }}>
-      <span>{icon}</span>
-      <span style={{ fontSize: 11 }}>{label}</span>
-    </button>
-  );
+    active = false, variant: 'default' | 'danger' | 'primary' = 'default'
+  ) => {
+    let color = '#64748b';
+    let bg = 'transparent';
+    let border = 'transparent';
+    
+    if (active) {
+      bg = 'rgba(99,102,241,0.2)';
+      border = '#6366f1';
+      color = '#a5b4fc';
+    } else if (variant === 'danger') {
+      color = '#fca5a5';
+      border = '#fecaca22';
+      bg = 'rgba(239,68,68,0.1)';
+    } else if (variant === 'primary') {
+      color = '#a5b4fc';
+      border = '#6366f144';
+      bg = 'rgba(99,102,241,0.1)';
+    }
+
+    return (
+      <button title={label} onClick={onClick} style={{
+        background: bg,
+        border: `1px solid ${border}`,
+        color: color,
+        borderRadius: 6, padding: '4px 8px', cursor: 'pointer',
+        fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
+        whiteSpace: 'nowrap' as const, transition: 'all 0.15s',
+      }}>
+        <span style={{ fontSize: 13 }}>{icon}</span>
+        <span style={{ fontSize: 11, fontWeight: variant !== 'default' ? 600 : 400 }}>{label}</span>
+      </button>
+    );
+  };
 
   const divider = () => (
     <div style={{ width: 1, height: 24, background: '#1e293b', margin: '0 4px' }} />
@@ -95,12 +116,12 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
   return (
     <div style={{
       height: 48, background: '#0a0f1a', borderBottom: '1px solid #1e293b',
-      display: 'flex', alignItems: 'center', paddingInline: 12, gap: 4,
+      display: 'flex', alignItems: 'center', paddingInline: 12, gap: 6,
       flexShrink: 0, zIndex: 20,
     }}>
       {/* Brand */}
       <div style={{
-        fontSize: 14, fontWeight: 800, color: '#a5b4fc', marginRight: 12,
+        fontSize: 14, fontWeight: 800, color: '#a5b4fc', marginRight: 8,
         letterSpacing: '-0.02em', whiteSpace: 'nowrap' as const,
       }}>
         🎯 SightGrid
@@ -108,38 +129,50 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
 
       {divider()}
 
+      {/* File Group */}
+      <button
+        onClick={() => user ? onCloudSave() : onRequestAuth()}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: user ? 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15))' : 'transparent',
+          border: '1px solid ' + (user ? 'rgba(99,102,241,0.3)' : 'transparent'),
+          color: user ? '#a5b4fc' : '#64748b',
+          borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 11, fontWeight: user ? 600 : 400,
+          transition: 'all 0.15s',
+        }}
+      >
+        <span>&#x2601;</span>
+        <span>Save</span>
+      </button>
+
+
+      {tbtn('✕', 'Clear', clearBoard, false, 'danger')}
+
+      {divider()}
+
+      {/* View & History Controls */}
       {tbtn('↩', 'Undo', undo)}
       {tbtn('↪', 'Redo', redo)}
 
       {divider()}
 
+      {tbtn('⟳', 'Reset View', resetView)}
       {tbtn(snapEnabled ? '🔒' : '🔓', `Snap: ${snapEnabled ? 'On' : 'Off'}`, toggleSnap, snapEnabled)}
 
-      {divider()}
-
       {/* Zoom controls */}
-      <button title="Zoom out" onClick={() => setViewport(stageX, stageY, Math.max(stageScale / 1.25, 0.2))}
-        style={iconBtnStyle}>−</button>
-      <span style={{ fontSize: 11, color: '#476090', minWidth: 42, textAlign: 'center' as const }}>
-        {Math.round(stageScale * 100)}%
-      </span>
-      <button title="Zoom in" onClick={() => setViewport(stageX, stageY, Math.min(stageScale * 1.25, 8))}
-        style={iconBtnStyle}>+</button>
+      <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(30,41,59,0.5)', borderRadius: 6, border: '1px solid #1e293b', overflow: 'hidden', marginLeft: 4 }}>
+        <button title="Zoom out" onClick={() => setViewport(stageX, stageY, Math.max(stageScale / 1.25, 0.2))}
+          style={iconBtnStyle}>−</button>
+        <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 42, textAlign: 'center' as const, fontWeight: 500 }}>
+          {Math.round(stageScale * 100)}%
+        </span>
+        <button title="Zoom in" onClick={() => setViewport(stageX, stageY, Math.min(stageScale * 1.25, 8))}
+          style={iconBtnStyle}>+</button>
+      </div>
 
-      {divider()}
-
-      <span style={{ fontSize: 11, color: '#334155' }}>
+      <span style={{ fontSize: 11, color: '#334155', marginLeft: 8 }}>
         {pixelsPerInch.toFixed(1)}px/in
       </span>
-
-      {selectedCount > 0 && (
-        <>
-          {divider()}
-          <span style={{ fontSize: 11, color: '#6366f1' }}>{selectedCount} selected</span>
-          {tbtn('⧉', 'Duplicate', () => duplicateUnits(selectedIds), false)}
-          {tbtn('🗑', 'Delete', deleteSelected, false, 'danger')}
-        </>
-      )}
 
       {/* Right side controls — pushed to the far right */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -170,8 +203,8 @@ export function Toolbar({ onOpenScenarios, onOpenAuth }: ToolbarProps) {
 }
 
 const iconBtnStyle: React.CSSProperties = {
-  background: 'transparent', border: '1px solid #1e293b',
-  color: '#64748b', borderRadius: 5, width: 26, height: 26,
+  background: 'transparent', border: 'none',
+  color: '#64748b', width: 26, height: 26,
   cursor: 'pointer', fontSize: 16, lineHeight: '1',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
