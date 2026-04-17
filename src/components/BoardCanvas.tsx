@@ -297,7 +297,8 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLay
   const pushHistory = useStore(s => s.pushHistory);
 
   const dragStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const isDraggingRef = useRef(false); // suppresses hover events during any drag
+  const isDraggingRef = useRef(false);          // suppresses hover during any drag
+  const isDraggingSignificantRef = useRef(false); // true once drag exceeds 20px — triggers spin-only
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
 
   // Safety clear on global mouseup — ensures isDraggingRef never gets stuck true
@@ -319,7 +320,10 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLay
 
   const handleDragStart = (u: UnitToken) => {
     isDraggingRef.current = true;
-    onDragStatusChange(true);
+    isDraggingSignificantRef.current = false; // reset — will flip true once mouse moves >20px
+    // NOTE: onDragStatusChange(true) is NOT called here. It fires in handleDragMove
+    // only after the drag has moved >20px, so tiny hold-wobbles don't lock into
+    // spin-only mode and break group orbit.
     onUnitHover(null); // clear any hover preview immediately
     // Use getState() so we always read the latest selectedIds, not a stale closure
     const { selectedIds: ids, units: currentUnits } = useStore.getState();
@@ -337,6 +341,21 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLay
   const handleDragMove = (u: UnitToken, e: Konva.KonvaEventObject<DragEvent>) => {
     const cx = e.target.x();
     const cy = e.target.y();
+
+    // Activate spin-only mode once the drag has moved a meaningful distance.
+    // This prevents tiny hold-wobbles from locking into spin-only and breaking
+    // group orbit on the NEXT hold-rotate interaction.
+    if (!isDraggingSignificantRef.current) {
+      const startPos = dragStartPositions.current.get(u.id);
+      if (startPos) {
+        const ddx = cx - startPos.x;
+        const ddy = cy - startPos.y;
+        if (Math.sqrt(ddx * ddx + ddy * ddy) > 20) {
+          isDraggingSignificantRef.current = true;
+          onDragStatusChange(true);
+        }
+      }
+    }
 
     // Update the distance label
     setDragInfo(prev => prev ? { ...prev, currentX: cx, currentY: cy } : null);
@@ -368,6 +387,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragStatusChange }: UnitLay
     upd(u.id, { x: newX, y: newY });
     ph();
     isDraggingRef.current = false;
+    isDraggingSignificantRef.current = false;
     onDragStatusChange(false);
     setDragInfo(null);
   };
@@ -576,10 +596,6 @@ export function BoardCanvas() {
   const unitHeldRef = useRef(false);
   // Tracks whether a Konva drag is actively in progress (for spin-vs-orbit decision)
   const isDraggingUnitRef = useRef(false);
-
-  // Require 8px movement before Konva starts a drag — prevents accidental drag
-  // starts when the user holds mouse to scroll-rotate with a tiny hand wobble.
-  Konva.dragDistance = 8;
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
