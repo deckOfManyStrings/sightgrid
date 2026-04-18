@@ -57,9 +57,10 @@ function TerrainLayer() {
   const activeTool = useStore(s => s.activeTool);
   const updateTerrain = useStore(s => s.updateTerrain);
   const setSelectedIds = useStore(s => s.setSelectedIds);
-  const layerStates = useStore(s => s.layerStates);
+  const objectsVisible = useStore(s => s.objectsVisible);
+  const objectsLocked = useStore(s => s.objectsLocked);
 
-  if (!layerStates.terrain.visible) return null;
+  if (!objectsVisible) return null;
 
   const tagColor = (t: TerrainObject) => {
     if (t.tags.includes('blocks_los')) return t.color || '#475569';
@@ -76,11 +77,11 @@ function TerrainLayer() {
         const commonProps = {
           opacity: t.opacity,
           onClick: () => {
-            if (activeTool === 'select' && !layerStates.terrain.locked) setSelectedIds([t.id]);
+            if (activeTool === 'select' && !objectsLocked) setSelectedIds([t.id]);
           },
-          draggable: activeTool === 'select' && !t.locked && !layerStates.terrain.locked,
+          draggable: activeTool === 'select' && !t.locked && !objectsLocked,
           onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
-            if (layerStates.terrain.locked) return;
+            if (objectsLocked) return;
             const dx = e.target.x(), dy = e.target.y();
             updateTerrain(t.id, {
               points: t.points.map((v, i) => i % 2 === 0 ? v + dx : v + dy),
@@ -143,14 +144,15 @@ function TerrainLayer() {
 // ─── Drawing Layer ─────────────────────────────────────────────────────────────
 function DrawingLayer() {
   const drawings = useStore(s => s.drawings) || [];
-  const layerStates = useStore(s => s.layerStates);
+  const objectsVisible = useStore(s => s.objectsVisible);
+  const objectsLocked = useStore(s => s.objectsLocked);
   const selectedIds = useStore(s => s.selectedIds);
   const activeTool = useStore(s => s.activeTool);
   const updateDrawing = useStore(s => s.updateDrawing);
   const setSelectedIds = useStore(s => s.setSelectedIds);
   const deleteDrawings = useStore(s => s.deleteDrawings);
 
-  if (!layerStates.drawings.visible) return null;
+  if (!objectsVisible) return null;
 
   return (
     <Layer>
@@ -158,7 +160,7 @@ function DrawingLayer() {
         const isSelected = selectedIds.includes(d.id);
 
         const erase = () => {
-          if (activeTool === 'eraser' && !layerStates.drawings.locked) {
+          if (activeTool === 'eraser' && !objectsLocked) {
             deleteDrawings([d.id]);
           }
         };
@@ -180,16 +182,16 @@ function DrawingLayer() {
             lineCap="round"
             lineJoin="round"
             hitStrokeWidth={Math.max(15, d.strokeWidth + 5)}
-            draggable={activeTool === 'select' && !layerStates.drawings.locked}
+            draggable={activeTool === 'select' && !objectsLocked}
             onPointerDown={erase}
             onPointerOver={handleDragErase}
             onTouchMove={handleDragErase}
             onClick={() => {
               if (activeTool === 'eraser') erase();
-              if (activeTool === 'select' && !layerStates.drawings.locked) setSelectedIds([d.id]);
+              if (activeTool === 'select' && !objectsLocked) setSelectedIds([d.id]);
             }}
             onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
-              if (layerStates.drawings.locked) return;
+              if (objectsLocked) return;
               const dx = e.target.x(), dy = e.target.y();
               updateDrawing(d.id, {
                 points: d.points.map((v, i) => i % 2 === 0 ? v + dx : v + dy),
@@ -385,7 +387,8 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
   const toggleSelection = useStore(s => s.toggleSelection);
   const setSelectedIds = useStore(s => s.setSelectedIds);
   const pushHistory = useStore(s => s.pushHistory);
-  const layerStates = useStore(s => s.layerStates);
+  const objectsVisible = useStore(s => s.objectsVisible);
+  const objectsLocked = useStore(s => s.objectsLocked);
 
   const dragStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
   const isDraggingRef = useRef(false); // suppresses hover during any drag
@@ -398,12 +401,12 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
 
-  if (!layerStates.units.visible) return null;
+  if (!objectsVisible) return null;
 
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
 
   const handleDragStart = (u: UnitToken) => {
-    if (layerStates.units.locked) return;
+    if (objectsLocked) return;
     isDraggingRef.current = true;
     lastPrimaryPosRef.current = { x: u.x, y: u.y };
     onDragPrimaryChange(u.id);
@@ -462,12 +465,12 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
         const isSelected = selectedIds.includes(u.id);
         const rW = mmToPxUtil(u.baseWidthMm, ppi) * 0.5;
         const rH = mmToPxUtil(u.baseHeightMm, ppi) * 0.5;
-        const draggable = activeTool === 'select' && !u.locked && !layerStates.units.locked;
+        const draggable = activeTool === 'select' && !u.locked && !objectsLocked;
         const isRound = u.baseShape === 'round';
         const isRect = u.baseShape === 'rect';
 
         const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
-          if (activeTool !== 'select' || layerStates.units.locked) return;
+          if (activeTool !== 'select' || objectsLocked) return;
           e.cancelBubble = true;
           if (e.evt.shiftKey) {
             toggleSelection(u.id);
@@ -847,7 +850,7 @@ export function BoardCanvas() {
           losEnabled: false,
           rangeInches: 24,
           locked: false,
-          layerId: useStore.getState().activeLayer,
+          layerId: 'units',
         });
       } else {
         // Build a formation centered on the click point
@@ -874,7 +877,7 @@ export function BoardCanvas() {
           losEnabled: false,
           rangeInches: 24,
           locked: false,
-          layerId: useStore.getState().activeLayer,
+          layerId: 'units',
         }));
         addUnitsBatch(newUnits);
       }
@@ -902,7 +905,7 @@ export function BoardCanvas() {
         const newPoints = [...drawState.points, pos.x, pos.y];
         addTerrain({
           id: uuidv4(), shape: 'line', points: newPoints,
-          tags: ['blocks_los'], color: '#6b7280', opacity: 0.9, locked: false, layerId: useStore.getState().activeLayer,
+          tags: ['blocks_los'], color: '#6b7280', opacity: 0.9, locked: false, layerId: 'terrain',
         });
         setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
       }
@@ -927,7 +930,7 @@ export function BoardCanvas() {
             // Close: commit the polygon with existing points (don't add the click as a new vertex)
             addTerrain({
               id: uuidv4(), shape: 'polygon', points: [...pts],
-              tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
+              tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
             });
             polyPointsRef.current = [];
             setPolyCloseSnap(false);
@@ -1023,7 +1026,7 @@ export function BoardCanvas() {
       if (Math.abs(pos.x - startX) > 5 && Math.abs(pos.y - startY) > 5) {
         addTerrain({
           id: uuidv4(), shape: 'rect', points: pts,
-          tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
+          tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
         });
       }
       setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
@@ -1040,7 +1043,7 @@ export function BoardCanvas() {
           strokeWidth: 4,
           opacity: 0.5,
           locked: false,
-          layerId: useStore.getState().activeLayer,
+          layerId: 'drawings',
         });
       }
       setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
@@ -1085,7 +1088,7 @@ export function BoardCanvas() {
         if (pts.length >= 6) {
           addTerrain({
             id: uuidv4(), shape: 'polygon', points: [...pts],
-            tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
+            tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
           });
         }
         polyPointsRef.current = [];

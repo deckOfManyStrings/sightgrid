@@ -21,11 +21,10 @@ export function Inspector() {
   const setBoard = useStore(s => s.setBoard);
   const layers = useStore(s => s.layers);
   const toggleLayer = useStore(s => s.toggleLayer);
-  const activeLayer = useStore(s => s.activeLayer);
-  const setActiveLayer = useStore(s => s.setActiveLayer);
-  const layerStates = useStore(s => s.layerStates);
-  const toggleLayerVisibilityObj = useStore(s => s.toggleLayerVisibilityObj);
-  const toggleLayerLockObj = useStore(s => s.toggleLayerLockObj);
+  const objectsVisible = useStore(s => s.objectsVisible);
+  const objectsLocked = useStore(s => s.objectsLocked);
+  const toggleObjectsVisible = useStore(s => s.toggleObjectsVisible);
+  const toggleObjectsLocked = useStore(s => s.toggleObjectsLocked);
   const snapEnabled = useStore(s => s.snapEnabled);
   const toggleSnap = useStore(s => s.toggleSnap);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -569,37 +568,25 @@ export function Inspector() {
       {section('Layers', (
         <>
           <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>Objects</div>
-          {(['units', 'terrain', 'drawings'] as const).map(k => {
-            const st = layerStates[k];
-            const isActive = activeLayer === k;
-            return (
-              <div key={k} style={{ 
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '4px 6px', marginBottom: 4, borderRadius: 4,
-                background: isActive ? 'rgba(99,102,241,0.2)' : 'transparent',
-                border: isActive ? '1px solid #6366f1' : '1px solid transparent',
-              }}>
-                <div 
-                  onClick={() => setActiveLayer(k)}
-                  style={{ flexGrow: 1, cursor: 'pointer', fontSize: 11, fontWeight: isActive ? 600 : 400, color: isActive ? '#a5b4fc' : '#94a3b8', textTransform: 'capitalize' }}
-                >
-                  {k}
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <span onClick={() => toggleLayerLockObj(k)} style={{ cursor: 'pointer', opacity: st.locked ? 1 : 0.4 }} title={st.locked ? 'Unlock Layer' : 'Lock Layer'}>
-                    {st.locked ? '🔒' : '🔓'}
-                  </span>
-                  <span onClick={() => toggleLayerVisibilityObj(k)} style={{ cursor: 'pointer', opacity: st.visible ? 1 : 0.4 }} title={st.visible ? 'Hide Layer' : 'Show Layer'}>
-                    {st.visible ? '👁' : '👁‍🗨'}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-          
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '4px 6px', marginBottom: 4, borderRadius: 4,
+            background: 'rgba(51,65,85,0.3)', border: '1px solid #1e293b',
+          }}>
+            <div style={{ flexGrow: 1, fontSize: 11, color: '#94a3b8' }}>All Objects</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <span onClick={toggleObjectsLocked} style={{ cursor: 'pointer', opacity: objectsLocked ? 1 : 0.4 }} title={objectsLocked ? 'Unlock' : 'Lock'}>
+                {objectsLocked ? '🔒' : '🔓'}
+              </span>
+              <span onClick={toggleObjectsVisible} style={{ cursor: 'pointer', opacity: objectsVisible ? 1 : 0.4 }} title={objectsVisible ? 'Hide' : 'Show'}>
+                {objectsVisible ? '👁' : '👁‍🗨'}
+              </span>
+            </div>
+          </div>
+
           <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, marginTop: 12 }}>System</div>
           {(Object.keys(layers) as (keyof typeof layers)[]).map(k => {
-            if (k === 'units' || k === 'terrain') return null; // now managed by Object Layers
+            if (k === 'units' || k === 'terrain') return null;
             return toggle(layers[k], () => toggleLayer(k), k.charAt(0).toUpperCase() + k.slice(1))
           })}
         </>

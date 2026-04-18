@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type {
   ActiveTool, BoardState, LayerVisibility, TerrainObject,
   UnitToken, HistorySnapshot, RulerState, UnitTemplate,
-  DrawingObject, LayerName, LayerState
+  DrawingObject, LayerName
 } from './types';
 import {
   DEFAULT_BOARD_WIDTH_INCHES, DEFAULT_BOARD_HEIGHT_INCHES, MAX_HISTORY_SIZE
@@ -68,12 +68,11 @@ export interface AppStore {
   layers: LayerVisibility;
   toggleLayer: (layer: keyof LayerVisibility) => void;
   
-  // Object Layers
-  activeLayer: LayerName;
-  setActiveLayer: (layer: LayerName) => void;
-  layerStates: Record<LayerName, LayerState>;
-  toggleLayerVisibilityObj: (layer: LayerName) => void;
-  toggleLayerLockObj: (layer: LayerName) => void;
+  // Object layer — single unified control
+  objectsVisible: boolean;
+  objectsLocked: boolean;
+  toggleObjectsVisible: () => void;
+  toggleObjectsLocked: () => void;
 
   // Snap to grid
   snapEnabled: boolean;
@@ -337,16 +336,11 @@ export const useStore = create<AppStore>()(
     toggleLayer: (layer) =>
       set((s) => { s.layers[layer] = !s.layers[layer]; }),
     
-    // Object Layers
-    activeLayer: 'drawings',
-    setActiveLayer: (layer) => set((s) => { s.activeLayer = layer; }),
-    layerStates: {
-      units: { id: 'units', visible: true, locked: false },
-      terrain: { id: 'terrain', visible: true, locked: false },
-      drawings: { id: 'drawings', visible: true, locked: false },
-    },
-    toggleLayerVisibilityObj: (layer) => set((s) => { s.layerStates[layer].visible = !s.layerStates[layer].visible; }),
-    toggleLayerLockObj: (layer) => set((s) => { s.layerStates[layer].locked = !s.layerStates[layer].locked; }),
+    // Object layer
+    objectsVisible: true,
+    objectsLocked: false,
+    toggleObjectsVisible: () => set((s) => { s.objectsVisible = !s.objectsVisible; }),
+    toggleObjectsLocked: () => set((s) => { s.objectsLocked = !s.objectsLocked; }),
 
     // Snap
     snapEnabled: false,
@@ -408,8 +402,8 @@ export const useStore = create<AppStore>()(
 
     // Persistence
     exportJSON: () => {
-      const { board, terrain, units, drawings, layerStates, canvasWidth } = get();
-      return JSON.stringify({ board, terrain, units, drawings, layerStates, savedCanvasWidth: canvasWidth }, null, 2);
+      const { board, terrain, units, drawings, objectsVisible, objectsLocked, canvasWidth } = get();
+      return JSON.stringify({ board, terrain, units, drawings, objectsVisible, objectsLocked, savedCanvasWidth: canvasWidth }, null, 2);
     },
     importJSON: (json) => {
       try {
@@ -454,9 +448,8 @@ export const useStore = create<AppStore>()(
             s.drawings = [];
           }
           
-          if (data.layerStates) {
-            s.layerStates = data.layerStates;
-          }
+          if (data.objectsVisible !== undefined) s.objectsVisible = data.objectsVisible;
+          if (data.objectsLocked !== undefined) s.objectsLocked = data.objectsLocked;
           
           s.selectedIds = [];
         });

@@ -14,11 +14,6 @@ export type ActiveTool =
 
 export type LayerName = 'units' | 'terrain' | 'drawings';
 
-export interface LayerState {
-  id: LayerName;
-  visible: boolean;
-  locked: boolean;
-}
 
 // Terrain
 export type TerrainTag = 'blocks_los' | 'obscuring' | 'difficult' | 'decorative';
