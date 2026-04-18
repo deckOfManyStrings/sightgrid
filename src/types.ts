@@ -87,6 +87,7 @@ export interface BoardState {
   mapScaleX: number;  // horizontal stretch multiplier (1 = fill board width)
   mapScaleY: number;  // vertical stretch multiplier (1 = fill board height)
   gridOpacity: number; // 0–1
+  mapOpacity?: number; // 0-1
 }
 
 // Layers

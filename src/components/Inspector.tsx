@@ -283,6 +283,19 @@ export function Inspector() {
                   {btn('⟳ Reset Map', () => setBoard({ mapX: 0, mapY: 0, mapScaleX: 1, mapScaleY: 1 }))}
                 </>
               )}
+
+              {/* Map Opacity */}
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>
+                  Map Opacity: {Math.round((board.mapOpacity ?? 1) * 100)}%
+                </div>
+                <input
+                  type="range" min={0} max={100} step={1}
+                  value={Math.round((board.mapOpacity ?? 1) * 100)}
+                  onChange={e => setBoard({ mapOpacity: +e.target.value / 100 })}
+                  style={{ width: '100%', accentColor: '#fbbf24', marginBottom: 4 }}
+                />
+              </div>
             </div>
           )}
 

@@ -22,13 +22,13 @@ function GridLayer() {
     const isMajor = Math.round(x / ppi) % 6 === 0;
     lines.push(
       <Line key={`vx${x}`} points={[x, 0, x, boardHeightPx]}
-        stroke={isMajor ? `rgba(99,102,241,${Math.min(op * 1.4, 1)})` : `rgba(99,102,241,${op * 0.5})`}
+        stroke={isMajor ? `rgba(255,255,255,${Math.min(op * 1.4, 1)})` : `rgba(255,255,255,${op * 0.5})`}
         strokeWidth={isMajor ? 1.5 : 0.5} listening={false} />,
     );
     if (isMajor && x > 0) {
       lines.push(
         <Text key={`vt${x}`} x={x + 2} y={2} text={`${Math.round(x / ppi)}"`}
-          fontSize={9} fill={`rgba(165,180,252,${Math.min(op * 2, 1)})`} listening={false} />,
+          fontSize={9} fill={`rgba(255,255,255,${Math.min(op * 2, 1)})`} listening={false} />,
       );
     }
   }
@@ -36,13 +36,13 @@ function GridLayer() {
     const isMajor = Math.round(y / ppi) % 6 === 0;
     lines.push(
       <Line key={`hy${y}`} points={[0, y, canvasWidth, y]}
-        stroke={isMajor ? `rgba(99,102,241,${Math.min(op * 1.4, 1)})` : `rgba(99,102,241,${op * 0.5})`}
+        stroke={isMajor ? `rgba(255,255,255,${Math.min(op * 1.4, 1)})` : `rgba(255,255,255,${op * 0.5})`}
         strokeWidth={isMajor ? 1.5 : 0.5} listening={false} />,
     );
     if (isMajor && y > 0) {
       lines.push(
         <Text key={`ht${y}`} x={2} y={y + 2} text={`${Math.round(y / ppi)}"`}
-          fontSize={9} fill={`rgba(165,180,252,${Math.min(op * 2, 1)})`} listening={false} />,
+          fontSize={9} fill={`rgba(255,255,255,${Math.min(op * 2, 1)})`} listening={false} />,
       );
     }
   }
@@ -631,6 +631,7 @@ function MapImageLayer() {
         y={board.mapY ?? 0}
         width={mapW}
         height={mapH}
+        opacity={board.mapOpacity ?? 1}
         draggable={isAdjusting}
         onDragEnd={(e) => {
           setBoard({ mapX: e.target.x(), mapY: e.target.y() });
@@ -657,6 +658,9 @@ export function BoardCanvas() {
   const wasdKeys = useRef<Set<string>>(new Set());
   const rafId = useRef<number | null>(null);
   const isPolyDrawing = useRef(false);
+  // Mirror of polygon points kept in a ref so handleDblClick always reads the
+  // freshest values — avoids stale-closure issues with async setDrawState.
+  const polyPointsRef = useRef<number[]>([]);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
   const heldUnitIdRef = useRef<string | null>(null);
   // Absorb momentum scroll after rotating
@@ -693,6 +697,8 @@ export function BoardCanvas() {
   });
   const [selBox, setSelBox] = useState<SelBox>({ x: 0, y: 0, w: 0, h: 0, visible: false });
   const [hoveredUnitId, setHoveredUnitId] = useState<string | null>(null);
+  // True when cursor is close enough to the first vertex to snap-close the polygon
+  const [polyCloseSnap, setPolyCloseSnap] = useState(false);
 
   // Resize observer
   useEffect(() => {
@@ -908,9 +914,32 @@ export function BoardCanvas() {
     // Terrain polygon
     if (activeTool === 'terrain_polygon') {
       if (!isPolyDrawing.current) {
+        // Start a new polygon
         isPolyDrawing.current = true;
+        polyPointsRef.current = [pos.x, pos.y];
         setDrawState({ drawing: true, points: [pos.x, pos.y], previewPoint: pos });
       } else {
+        // Check if clicking near the first vertex → close the polygon
+        const pts = polyPointsRef.current;
+        if (pts.length >= 6) { // need ≥3 vertices before we can close
+          const CLOSE_THRESH = 15 / stageScale; // 15 screen-px in canvas-space
+          const dx = pos.x - pts[0];
+          const dy = pos.y - pts[1];
+          if (Math.sqrt(dx * dx + dy * dy) < CLOSE_THRESH) {
+            // Close: commit the polygon with existing points (don't add the click as a new vertex)
+            addTerrain({
+              id: uuidv4(), shape: 'polygon', points: [...pts],
+              tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
+            });
+            polyPointsRef.current = [];
+            setPolyCloseSnap(false);
+            setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
+            isPolyDrawing.current = false;
+            return;
+          }
+        }
+        // Normal: add point
+        polyPointsRef.current = [...pts, pos.x, pos.y];
         setDrawState(prev => ({ ...prev, points: [...prev.points, pos.x, pos.y], previewPoint: pos }));
       }
       return;
@@ -953,6 +982,19 @@ export function BoardCanvas() {
     // Terrain line/polygon preview
     if ((activeTool === 'terrain_line' || activeTool === 'terrain_polygon') && drawState.drawing) {
       setDrawState(prev => ({ ...prev, previewPoint: pos }));
+    }
+
+    // Update close-snap indicator for polygon
+    if (activeTool === 'terrain_polygon' && isPolyDrawing.current) {
+      const pts = polyPointsRef.current;
+      if (pts.length >= 6) {
+        const CLOSE_THRESH = 15 / stageScale;
+        const dx = pos.x - pts[0];
+        const dy = pos.y - pts[1];
+        setPolyCloseSnap(Math.sqrt(dx * dx + dy * dy) < CLOSE_THRESH);
+      } else {
+        setPolyCloseSnap(false);
+      }
     }
 
     // Selection box
@@ -1035,16 +1077,35 @@ export function BoardCanvas() {
     }
   }, [activeTool, drawState, ruler, selBox, units, getRelPos, setRuler, addTerrain, setSelectedIds, toggleSelection]);
 
-  const handleDblClick = useCallback((_e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (activeTool === 'terrain_polygon' && drawState.drawing && drawState.points.length >= 6) {
-      addTerrain({
-        id: uuidv4(), shape: 'polygon', points: drawState.points,
-        tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
-      });
-      setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
-      isPolyDrawing.current = false;
-    }
-  }, [activeTool, drawState, addTerrain]);
+  // Enter = complete polygon, Escape = cancel — reliable keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!isPolyDrawing.current) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const pts = polyPointsRef.current;
+        if (pts.length >= 6) {
+          addTerrain({
+            id: uuidv4(), shape: 'polygon', points: [...pts],
+            tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: useStore.getState().activeLayer,
+          });
+        }
+        polyPointsRef.current = [];
+        setPolyCloseSnap(false);
+        setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
+        isPolyDrawing.current = false;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        polyPointsRef.current = [];
+        setPolyCloseSnap(false);
+        setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
+        isPolyDrawing.current = false;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [addTerrain]);
 
   // Release unit-hold on global mouseup
   useEffect(() => {
@@ -1169,7 +1230,6 @@ export function BoardCanvas() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onDblClick={handleDblClick}
         onWheel={handleWheel}
       >
         {/* Board background */}
@@ -1208,12 +1268,19 @@ export function BoardCanvas() {
                   closed={false}
                   stroke="#a5f3fc" strokeWidth={1.5} dash={[5, 3]}
                 />
-                {Array.from({ length: drawState.points.length / 2 }).map((_, i) => (
-                  <Circle key={i}
-                    x={drawState.points[i * 2]} y={drawState.points[i * 2 + 1]}
-                    radius={4} fill="#a5f3fc"
-                  />
-                ))}
+                {Array.from({ length: drawState.points.length / 2 }).map((_, i) => {
+                  const isFirst = i === 0;
+                  const canClose = drawState.points.length >= 6;
+                  return (
+                    <Circle key={i}
+                      x={drawState.points[i * 2]} y={drawState.points[i * 2 + 1]}
+                      radius={isFirst && canClose ? (polyCloseSnap ? 9 : 6) : 4}
+                      fill={isFirst && canClose ? (polyCloseSnap ? '#22c55e' : '#86efac') : '#a5f3fc'}
+                      stroke={isFirst && canClose ? '#16a34a' : undefined}
+                      strokeWidth={isFirst && canClose ? 2 : 0}
+                    />
+                  );
+                })}
               </>
             )}
             {activeTool === 'terrain_line' && drawState.points.length >= 2 && (
