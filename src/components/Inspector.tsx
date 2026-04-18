@@ -354,8 +354,6 @@ export function Inspector() {
           </select>
           {label('Name')}
           {input(unitTemplate.name, v => setUnitTemplate({ name: v }))}
-          {label('Unit Type')}
-          {input(unitTemplate.unitType, v => setUnitTemplate({ unitType: v }))}
           {label('Color')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
             {UNIT_COLORS.map(c => (
@@ -391,8 +389,6 @@ export function Inspector() {
         <>
           {label('Name')}
           {input(u.name, v => updateUnit(u.id, { name: v }))}
-          {label('Unit Type')}
-          {input(u.unitType, v => updateUnit(u.id, { unitType: v }))}
           {label('Color')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
             {UNIT_COLORS.map(c => (

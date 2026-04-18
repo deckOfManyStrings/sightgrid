@@ -48,7 +48,6 @@ export interface BaseSize {
 export interface UnitToken {
   id: string;
   name: string;
-  unitType: string;
   baseShape: BaseShape;
   baseWidthMm: number;
   baseHeightMm: number;
@@ -121,6 +120,5 @@ export interface UnitTemplate {
   baseSize: BaseSize;
   color: string;
   name: string;
-  unitType: string;
   placementCount: number; // how many units to place per click (1 | 5 | 10 | 20)
 }

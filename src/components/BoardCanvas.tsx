@@ -836,7 +836,6 @@ export function BoardCanvas() {
         addUnit({
           id: uuidv4(),
           name: unitTemplate.name,
-          unitType: unitTemplate.unitType,
           baseShape: bs.shape,
           baseWidthMm: bs.widthMm,
           baseHeightMm: bs.heightMm,
@@ -863,7 +862,6 @@ export function BoardCanvas() {
         const newUnits = Array.from({ length: count }, (_, i) => ({
           id: uuidv4(),
           name: unitTemplate.name,
-          unitType: unitTemplate.unitType,
           baseShape: bs.shape,
           baseWidthMm: bs.widthMm,
           baseHeightMm: bs.heightMm,

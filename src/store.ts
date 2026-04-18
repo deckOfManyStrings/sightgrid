@@ -109,7 +109,6 @@ const defaultTemplate: UnitTemplate = {
   baseSize: BASE_SIZES[2], // 32mm
   color: '#3b82f6',
   name: 'Unit',
-  unitType: 'Infantry',
   placementCount: 1,
 };
 
@@ -122,18 +121,18 @@ const INITIAL_TERRAIN: TerrainObject[] = [
 
 const INITIAL_UNITS: UnitToken[] = [
   // Blue group (MSU)
-  { id: b_id_center, name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: true, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 170, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 290, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 220, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'MSU', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 340, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: b_id_center, name: 'MSU', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: true, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 170, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 290, y: 280, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 220, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'MSU', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 230, y: 340, rotation: 0, color: '#3b82f6', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
 
   // Green group (Nobz)
-  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 420, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
-  { id: uuidv4(), name: 'Nobz', unitType: 'Infantry', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 420, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 680, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 480, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
+  { id: uuidv4(), name: 'Nobz', baseShape: 'round', baseWidthMm: 32, baseHeightMm: 32, x: 740, y: 540, rotation: 0, color: '#22c55e', labelVisible: true, facingArrow: false, losEnabled: false, rangeInches: 24, locked: false, layerId: 'units' },
 ];
 
 // Store
