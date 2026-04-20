@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore, getPixelsPerInch } from '../store';
 import { AccountButton } from './AccountButton';
 import { useAuth } from '../contexts/AuthContext';
+import { TipsModal } from './TipsModal';
 
 interface ToolbarProps {
   onOpenScenarios: () => void;
@@ -35,6 +36,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
 
   const pixelsPerInch = getPixelsPerInch(canvasWidth, boardWidthInches);
   const { user } = useAuth();
+  const [showTips, setShowTips] = useState(false);
 
   const deleteSelected = () => {
     const terrainIds = selectedIds.filter(id => terrain.some(t => t.id === id));
@@ -54,6 +56,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
       if (!e.metaKey && !e.ctrlKey) {
+        if (e.key === '?') { setShowTips(s => !s); return; }
         if (e.key === 'v' || e.key === 'V') setActiveTool('select');
         if (e.key === ' ') { e.preventDefault(); /* space reserved */ }
         if (e.key === 'u' || e.key === 'U') setActiveTool('place_unit');
@@ -114,6 +117,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
   );
 
   return (
+    <>
     <div style={{
       height: 48, background: '#0a0f1a', borderBottom: '1px solid #1e293b',
       display: 'flex', alignItems: 'center', paddingInline: 12, gap: 6,
@@ -176,6 +180,22 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
 
       {/* Right side controls — pushed to the far right */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          onClick={() => setShowTips(s => !s)}
+          title="Keyboard shortcuts (?)"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            background: showTips ? 'rgba(99,102,241,0.2)' : 'rgba(30,41,59,0.4)',
+            border: `1px solid ${showTips ? '#6366f1' : '#1e293b'}`,
+            color: showTips ? '#a5b4fc' : '#64748b',
+            borderRadius: 8, padding: '4px 10px',
+            cursor: 'pointer', fontSize: 12, fontWeight: 600,
+            transition: 'all 0.15s',
+          }}
+        >
+          <span style={{ fontSize: 13 }}>⌨️</span>
+          <span>Shortcuts</span>
+        </button>
         <a 
           href="https://buy.stripe.com/dRm5kF4yOcSdgOV4G30Fi00"
           target="_blank"
@@ -199,6 +219,9 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
         />
       </div>
     </div>
+
+    {showTips && <TipsModal onClose={() => setShowTips(false)} />}
+  </>
   );
 }
 
