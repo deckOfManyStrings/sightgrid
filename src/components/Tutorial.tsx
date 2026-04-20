@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const TUTORIAL_KEY = 'sightgrid_tutorial_v1_done';
+const TUTORIAL_KEY = 'sightgrid_tutorial_v2_done';
 
 interface Step {
   title: string;
@@ -17,13 +17,33 @@ interface Step {
     left?: number;
     right?: number;
   };
-  /** Which side the arrow caret points FROM (i.e. the arrow is on that side of the card) */
-  arrow: 'left' | 'right';
-  /** Distance of arrow tip from top of card */
-  arrowTop: string;
+  /** Which side the arrow caret points FROM — 'none' for centred cards with no caret */
+  arrow: 'left' | 'right' | 'none';
+  /** Distance of arrow tip from top of card (ignored when arrow is 'none') */
+  arrowTop?: string;
+  /** Extra card width override (default 268) */
+  cardWidth?: number;
+  /** Optional hint lines to show below body instead of a single shortcut badge */
+  hints?: { icon: string; label: string; keys: string }[];
 }
 
 const STEPS: Step[] = [
+  // ── Board navigation ──────────────────────────────────────────────────────
+  {
+    title: '🗺️ Navigating the Board',
+    body: 'Learn how to move around before diving in:',
+    cardFixed: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+    highlight: { top: 56, left: 68, width: 900, height: 600, borderRadius: 12 },
+    arrow: 'none',
+    cardWidth: 360,
+    hints: [
+      { icon: '🖱️', label: 'Scroll wheel',  keys: 'Zoom in / out' },
+      { icon: '⌨️', label: 'W A S D',       keys: 'Pan the board' },
+      { icon: '➕', label: '+ − buttons',   keys: 'Toolbar zoom controls' },
+      { icon: '🔄', label: 'Reset View',     keys: 'Toolbar ⟳ button resets zoom & position' },
+    ],
+  },
+  // ── Tools ─────────────────────────────────────────────────────────────────
   {
     title: '🖱️ Select & Move',
     body: 'Start here! Click unit tokens to select them, then drag to reposition. Hold Shift to select multiple at once. Press Delete to remove the selection.',
@@ -92,7 +112,7 @@ export function Tutorial() {
 
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
-  const { highlight, cardFixed, arrow, arrowTop, title, body, shortcut } = current;
+  const { highlight, cardFixed, arrow, arrowTop, title, body, shortcut, cardWidth = 268, hints } = current;
 
   const dismiss = () => {
     localStorage.setItem(TUTORIAL_KEY, '1');
@@ -150,7 +170,7 @@ export function Tutorial() {
         style={{
           position: 'fixed',
           ...cardFixed,
-          width: 268,
+          width: cardWidth,
           background: 'rgba(10,15,26,0.97)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(99,102,241,0.35)',
@@ -246,8 +266,24 @@ export function Tutorial() {
           {body}
         </div>
 
-        {/* Keyboard shortcut badge */}
-        {shortcut && (
+        {/* Keyboard shortcut badge OR hint rows */}
+        {hints ? (
+          <div style={{ marginBottom: 14 }}>
+            {hints.map((h, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '6px 0',
+                borderBottom: i < hints.length - 1 ? '1px solid rgba(30,41,59,0.7)' : 'none',
+              }}>
+                <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{h.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#c7d2fe', marginBottom: 1 }}>{h.label}</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>{h.keys}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : shortcut ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
             <span style={{ fontSize: 10, color: '#475569' }}>Shortcut</span>
             <kbd style={{
@@ -258,7 +294,7 @@ export function Tutorial() {
               {shortcut}
             </kbd>
           </div>
-        )}
+        ) : null}
 
         {/* Navigation buttons */}
         <div style={{ display: 'flex', gap: 6 }}>
