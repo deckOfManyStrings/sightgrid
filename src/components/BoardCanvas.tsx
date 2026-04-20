@@ -657,9 +657,6 @@ export function BoardCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const selBoxStart = useRef<{ x: number; y: number } | null>(null);
-  // WASD pan state
-  const wasdKeys = useRef<Set<string>>(new Set());
-  const rafId = useRef<number | null>(null);
   const isPolyDrawing = useRef(false);
   // Mirror of polygon points kept in a ref so handleDblClick always reads the
   // freshest values — avoids stale-closure issues with async setDrawState.
@@ -751,51 +748,6 @@ export function BoardCanvas() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // WASD smooth pan
-  useEffect(() => {
-    const PAN_SPEED = 8; // px per frame at 100% zoom
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      const k = e.key.toLowerCase();
-      if (['w', 'a', 's', 'd'].includes(k)) {
-        e.preventDefault();
-        wasdKeys.current.add(k);
-        if (rafId.current === null) startLoop();
-      }
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      wasdKeys.current.delete(e.key.toLowerCase());
-      if (wasdKeys.current.size === 0 && rafId.current !== null) {
-        cancelAnimationFrame(rafId.current);
-        rafId.current = null;
-      }
-    };
-
-    const startLoop = () => {
-      const loop = () => {
-        const keys = wasdKeys.current;
-        if (keys.size === 0) { rafId.current = null; return; }
-        const { stageX: sx, stageY: sy, stageScale: sc, setViewport: sv } = useStore.getState();
-        let dx = 0, dy = 0;
-        if (keys.has('a')) dx += PAN_SPEED;
-        if (keys.has('d')) dx -= PAN_SPEED;
-        if (keys.has('w')) dy += PAN_SPEED;
-        if (keys.has('s')) dy -= PAN_SPEED;
-        sv(sx + dx, sy + dy, sc);
-        rafId.current = requestAnimationFrame(loop);
-      };
-      rafId.current = requestAnimationFrame(loop);
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
-    };
-  }, []);
 
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
 
