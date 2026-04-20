@@ -12,7 +12,7 @@ const TIPS: { keys: string[]; description: string; category: string }[] = [
   { keys: ['R'],            description: 'Switch to Terrain Rect tool — drag out buildings and cover', category: 'Tools' },
   { keys: ['P'],            description: 'Switch to Terrain Polygon tool — click to place each vertex', category: 'Tools' },
   { keys: ['M'],            description: 'Switch to the Ruler — click and drag to measure in inches',  category: 'Tools' },
-  { keys: ['D'],            description: 'Switch to the Draw tool — freehand sketch on the board',    category: 'Tools' },
+  { keys: ['F'],            description: 'Switch to the Draw tool — freehand sketch on the board',    category: 'Tools' },
   { keys: ['E'],            description: 'Switch to the Eraser — drag over drawings to remove them',  category: 'Tools' },
   // Polygon
   { keys: ['Enter'],        description: 'Complete the current polygon while using the Polygon tool', category: 'Drawing' },

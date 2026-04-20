@@ -64,7 +64,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
         if (e.key === 'r' || e.key === 'R') setActiveTool('terrain_rect');
         if (e.key === 'p' || e.key === 'P') setActiveTool('terrain_polygon');
         if (e.key === 'm' || e.key === 'M') setActiveTool('ruler');
-        if (e.key === 'd' || e.key === 'D') setActiveTool('draw');
+        if (e.key === 'f' || e.key === 'F') setActiveTool('draw');
         if (e.key === 'e' || e.key === 'E') setActiveTool('eraser');
         if (e.key === 'Delete' || e.key === 'Backspace') {
           if (selectedIds.length > 0) deleteSelected();

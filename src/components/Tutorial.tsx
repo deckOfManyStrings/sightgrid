@@ -54,7 +54,7 @@ const STEPS: Step[] = [
   {
     title: '✎ Freehand Draw',
     body: 'Sketch movement arrows, zone markers, or notes directly on the board. Use the Eraser to remove them. Drawings live on their own layer and never affect gameplay.',
-    shortcut: 'D · E',
+    shortcut: 'F · E',
     cardFixed: { top: 420, left: 82 },
     highlight: { top: 445, left: 6, width: 52, height: 114, borderRadius: 8 },
     arrow: 'left',
