@@ -6,6 +6,7 @@ import { Inspector } from './components/Inspector';
 import { BoardCanvas } from './components/BoardCanvas';
 import { AuthModal } from './components/AuthModal';
 import { ScenariosPanel } from './components/ScenariosPanel';
+import { Tutorial } from './components/Tutorial';
 import './App.css';
 
 function App() {
@@ -61,6 +62,8 @@ function App() {
         pendingSave={pendingSave}
         onClearPendingSave={() => setPendingSave(false)}
       />
+      {/* Step-by-step tutorial (first-visit only) */}
+      <Tutorial />
     </AuthProvider>
   );
 }
