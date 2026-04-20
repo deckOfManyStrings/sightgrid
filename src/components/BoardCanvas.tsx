@@ -862,7 +862,7 @@ export function BoardCanvas() {
         const totalH = rows * h + (rows - 1) * gap;
         const startX = pos.x - totalW / 2;
         const startY = pos.y - totalH / 2;
-        const newUnits = Array.from({ length: count }, (_, i) => ({
+        const newUnits: import('../types').UnitToken[] = Array.from({ length: count }, (_, i) => ({
           id: uuidv4(),
           name: unitTemplate.name,
           baseShape: bs.shape,
@@ -877,7 +877,7 @@ export function BoardCanvas() {
           losEnabled: false,
           rangeInches: 24,
           locked: false,
-          layerId: 'units',
+          layerId: 'units' as const,
         }));
         addUnitsBatch(newUnits);
       }
