@@ -128,7 +128,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
         fontSize: 14, fontWeight: 800, color: '#a5b4fc', marginRight: 8,
         letterSpacing: '-0.02em', whiteSpace: 'nowrap' as const,
       }}>
-        🎯 SightGrid
+        SightGrid
       </div>
 
       {divider()}
