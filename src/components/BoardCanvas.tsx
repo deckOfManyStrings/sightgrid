@@ -305,7 +305,7 @@ function LosLayer() {
 }
 
 // ─── Hover LoS Preview Layer ──────────────────────────────────────────────────
-// Lightweight hover preview: 60 rays (vs 360 for persistent), blue-purple tint.
+// Hover preview: 360 rays to match persistent toggle and avoid clipping through terrain.
 // Suppressed when the unit already has the full persistent LoS toggle active.
 function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
   const units = useStore(s => s.units);
@@ -323,8 +323,8 @@ function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
   const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
   const blockers = terrain.filter(t => t.tags.includes('blocks_los'));
 
-  // 60 rays = 6° resolution — good approximation, ~6× cheaper than full LoS
-  const poly = buildLosPolygon(unit.x, unit.y, unit.rangeInches, ppi, blockers, 60);
+  // 360 rays (1° resolution) to accurately wrap around terrain corners
+  const poly = buildLosPolygon(unit.x, unit.y, unit.rangeInches, ppi, blockers, 360);
 
   return (
     <Layer clipX={0} clipY={0} clipWidth={canvasWidth} clipHeight={boardHeightPx}>
