@@ -27,6 +27,8 @@ export function Inspector() {
   const toggleObjectsLocked = useStore(s => s.toggleObjectsLocked);
   const snapEnabled = useStore(s => s.snapEnabled);
   const toggleSnap = useStore(s => s.toggleSnap);
+  const drawColor = useStore(s => s.drawColor);
+  const setDrawColor = useStore(s => s.setDrawColor);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplateColorPicker, setShowTemplateColorPicker] = useState(false);
   const [showGroupColorPicker, setShowGroupColorPicker] = useState(false);
@@ -385,16 +387,16 @@ export function Inspector() {
           {label('Color')}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
             {UNIT_COLORS.map(c => (
-              <div key={c} onClick={() => useStore.getState().setDrawColor(c)}
+              <div key={c} onClick={() => setDrawColor(c)}
                 style={{
                   width: 20, height: 20, borderRadius: 4, background: c, cursor: 'pointer',
-                  border: useStore.getState().drawColor === c ? '2px solid white' : '2px solid transparent',
+                  border: drawColor === c ? '2px solid white' : '2px solid transparent',
                 }} />
             ))}
           </div>
           <div onClick={() => setShowDrawColorPicker(!showDrawColorPicker)}
             style={{
-              width: '100%', height: 28, borderRadius: 6, background: useStore.getState().drawColor,
+              width: '100%', height: 28, borderRadius: 6, background: drawColor,
               cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center',
               justifyContent: 'center', fontSize: 11, color: 'rgba(255,255,255,0.8)',
               border: '1px solid #334155',
@@ -403,7 +405,7 @@ export function Inspector() {
           </div>
           {showDrawColorPicker && (
             <div style={{ marginBottom: 8 }}>
-              <HexColorPicker color={useStore.getState().drawColor} onChange={c => useStore.getState().setDrawColor(c)} />
+              <HexColorPicker color={drawColor} onChange={c => setDrawColor(c)} />
             </div>
           )}
         </>

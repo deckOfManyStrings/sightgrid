@@ -776,7 +776,7 @@ export function BoardCanvas() {
 
   // WASD smooth pan
   useEffect(() => {
-    const SPEED = 10;
+    const SPEED = 25;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
