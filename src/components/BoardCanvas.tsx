@@ -76,7 +76,7 @@ function TerrainLayer({ layerId, onTerrainMouseDown }: TerrainLayerProps) {
   };
 
   return (
-    <Layer>
+    <Group>
       {terrain.map((t) => {
         const isSelected = selectedIds.includes(t.id);
         const color = tagColor(t);
@@ -176,7 +176,7 @@ function DrawingLayer({ layerId }: { layerId: LayerName }) {
   if (!objectsVisible) return null;
 
   return (
-    <Layer>
+    <Group>
       {drawings.map((d) => {
         const isSelected = selectedIds.includes(d.id);
 
@@ -251,7 +251,7 @@ function LosLayer() {
   const blockers = terrain.filter(t => t.tags.includes('blocks_los'));
 
   return (
-    <Layer
+    <Group
       clipX={0} clipY={0}
       clipWidth={canvasWidth} clipHeight={boardHeightPx}
     >
@@ -308,7 +308,7 @@ function LosLayer() {
           </Group>
         );
       })}
-    </Layer>
+    </Group>
   );
 }
 
@@ -335,7 +335,7 @@ function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
   const poly = buildLosPolygon(unit.x, unit.y, unit.rangeInches, ppi, blockers, 360);
 
   return (
-    <Layer clipX={0} clipY={0} clipWidth={canvasWidth} clipHeight={boardHeightPx}>
+    <Group clipX={0} clipY={0} clipWidth={canvasWidth} clipHeight={boardHeightPx}>
       {/* Ghost LoS polygon — blue-purple preview tint */}
       <Line
         points={poly}
@@ -382,7 +382,7 @@ function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
           );
         })
       }
-    </Layer>
+    </Group>
   );
 }
 
@@ -488,7 +488,7 @@ function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange,
   };
 
   return (
-    <Layer>
+    <Group>
       {units.map((u) => {
         const isSelected = selectedIds.includes(u.id);
         const rW = mmToPxUtil(u.baseWidthMm, ppi) * 0.5;
