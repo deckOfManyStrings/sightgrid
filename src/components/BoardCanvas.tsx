@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Line, Rect, Circle, Ellipse, Arrow, Text, Group } from 'react-konva';
 import Konva from 'konva';
 import { useStore, getPixelsPerInch, mmToPx as mmToPxUtil, pxToInches as pxToInchesUtil } from '../store';
-import type { TerrainObject, UnitToken } from '../types';
+import type { TerrainObject, UnitToken, LayerName } from '../types';
 import { buildLosPolygon, dist, pointInPolygon } from '../utils/geometry';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -56,6 +56,7 @@ interface TerrainLayerProps {
 }
 
 function TerrainLayer({ layerId, onTerrainMouseDown }: TerrainLayerProps) {
+  const activeInteractionLayer = useStore(s => s.activeInteractionLayer);
   const terrain = useStore(s => s.terrain).filter(t => t.layerId === layerId);
   const terrainVisible = useStore(s => s.layers.terrain);
   const selectedIds = useStore(s => s.selectedIds);
@@ -164,6 +165,7 @@ function TerrainLayer({ layerId, onTerrainMouseDown }: TerrainLayerProps) {
 
 // ─── Drawing Layer ─────────────────────────────────────────────────────────────
 function DrawingLayer({ layerId }: { layerId: LayerName }) {
+  const activeInteractionLayer = useStore(s => s.activeInteractionLayer);
   const drawings = useStore(s => s.drawings)?.filter(d => d.layerId === layerId) || [];
   const objectsVisible = useStore(s => s.objectsVisible);
   const objectsLocked = useStore(s => s.objectsLocked);
@@ -404,6 +406,7 @@ interface UnitLayerProps {
 }
 
 function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrimaryPosRef }: UnitLayerProps) {
+  const activeInteractionLayer = useStore(s => s.activeInteractionLayer);
   const units = useStore(s => s.units).filter(u => u.layerId === layerId);
   const unitsVisible = useStore(s => s.layers.units);
   const selectedIds = useStore(s => s.selectedIds);

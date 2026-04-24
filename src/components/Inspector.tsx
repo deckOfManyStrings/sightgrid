@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useStore, getPixelsPerInch, mmToPx as mmToPxUtil, pxToInches as pxToInchesUtil } from '../store';
 import { HexColorPicker } from 'react-colorful';
 import { BASE_SIZES, UNIT_COLORS } from '../constants';
+import type { LayerName } from '../types';
 export function Inspector() {
   const selectedIds = useStore(s => s.selectedIds);
   const units = useStore(s => s.units);
