@@ -16,6 +16,7 @@ export type ActiveTool =
   | 'eraser';
 
 export type LayerName = 'units' | 'terrain' | 'drawings';
+export type InteractionLayer = LayerName | 'all';
 
 
 // Terrain

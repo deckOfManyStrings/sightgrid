@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type {
   ActiveTool, BoardState, LayerVisibility, TerrainObject,
   UnitToken, HistorySnapshot, RulerState, UnitTemplate,
-  DrawingObject, LayerName
+  DrawingObject, LayerName, InteractionLayer
 } from './types';
 import type { ScenarioTemplate } from './templates';
 import {
@@ -62,6 +62,11 @@ export interface AppStore {
   // Active tool
   activeTool: ActiveTool;
   setActiveTool: (tool: ActiveTool) => void;
+  activeInteractionLayer: InteractionLayer;
+  setActiveInteractionLayer: (layer: InteractionLayer) => void;
+
+  // Change Object Layer
+  changeLayer: (ids: string[], targetLayer: LayerName) => void;
 
   // Unit template (for placement tool)
   unitTemplate: UnitTemplate;
@@ -325,9 +330,32 @@ export const useStore = create<AppStore>()(
       get().pushHistory();
     },
 
-    // Tool
+    // Active tool
     activeTool: 'select',
-    setActiveTool: (tool) => set((s) => { s.activeTool = tool; }),
+    setActiveTool: (t) => {
+      set((s) => {
+        s.activeTool = t;
+        s.ruler.active = false;
+        if (t === 'select') s.selectedIds = [];
+      });
+    },
+
+    activeInteractionLayer: 'all',
+    setActiveInteractionLayer: (layer) => {
+      set((s) => {
+        s.activeInteractionLayer = layer;
+        s.selectedIds = []; // clear selection when switching layers
+      });
+    },
+
+    changeLayer: (ids, targetLayer) => {
+       set((s) => {
+         s.units.forEach(u => { if (ids.includes(u.id)) u.layerId = targetLayer; });
+         s.terrain.forEach(t => { if (ids.includes(t.id)) t.layerId = targetLayer; });
+         s.drawings.forEach(d => { if (ids.includes(d.id)) d.layerId = targetLayer; });
+       });
+       get().pushHistory();
+    },
 
     // Unit template
     unitTemplate: defaultTemplate,

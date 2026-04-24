@@ -51,11 +51,12 @@ function GridLayer() {
 
 // ─── Terrain Layer ────────────────────────────────────────────────────────────
 interface TerrainLayerProps {
+  layerId: LayerName;
   onTerrainMouseDown: (id: string) => void;
 }
 
-function TerrainLayer({ onTerrainMouseDown }: TerrainLayerProps) {
-  const terrain = useStore(s => s.terrain);
+function TerrainLayer({ layerId, onTerrainMouseDown }: TerrainLayerProps) {
+  const terrain = useStore(s => s.terrain).filter(t => t.layerId === layerId);
   const terrainVisible = useStore(s => s.layers.terrain);
   const selectedIds = useStore(s => s.selectedIds);
   const activeTool = useStore(s => s.activeTool);
@@ -82,12 +83,14 @@ function TerrainLayer({ onTerrainMouseDown }: TerrainLayerProps) {
         const commonProps = {
           opacity: t.opacity,
           onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => {
+            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== t.layerId) return;
             if (activeTool === 'select' && !objectsLocked) {
               e.cancelBubble = true;
               onTerrainMouseDown(t.id);
             }
           },
           onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== t.layerId) return;
             if (activeTool === 'select' && !objectsLocked) {
               e.cancelBubble = true;
               if (e.evt.shiftKey) {
@@ -155,13 +158,13 @@ function TerrainLayer({ onTerrainMouseDown }: TerrainLayerProps) {
           </Group>
         );
       })}
-    </Layer>
+    </Group>
   );
 }
 
 // ─── Drawing Layer ─────────────────────────────────────────────────────────────
-function DrawingLayer() {
-  const drawings = useStore(s => s.drawings) || [];
+function DrawingLayer({ layerId }: { layerId: LayerName }) {
+  const drawings = useStore(s => s.drawings)?.filter(d => d.layerId === layerId) || [];
   const objectsVisible = useStore(s => s.objectsVisible);
   const objectsLocked = useStore(s => s.objectsLocked);
   const selectedIds = useStore(s => s.selectedIds);
@@ -202,10 +205,14 @@ function DrawingLayer() {
             lineJoin={d.shape === 'freehand' ? "round" : "miter"}
             hitStrokeWidth={Math.max(15, d.strokeWidth + 5)}
             draggable={activeTool === 'select' && !objectsLocked}
-            onPointerDown={erase}
+            onPointerDown={(e) => {
+              if (activeInteractionLayer !== 'all' && activeInteractionLayer !== d.layerId) return;
+              erase();
+            }}
             onPointerOver={handleDragErase}
             onTouchMove={handleDragErase}
-            onClick={() => {
+            onClick={(e) => {
+              if (activeInteractionLayer !== 'all' && activeInteractionLayer !== d.layerId) return;
               if (activeTool === 'eraser') erase();
               if (activeTool === 'select' && !objectsLocked) setSelectedIds([d.id]);
             }}
@@ -221,7 +228,7 @@ function DrawingLayer() {
           />
         );
       })}
-    </Layer>
+    </Group>
   );
 }
 
@@ -389,14 +396,15 @@ interface DragInfo {
 }
 
 interface UnitLayerProps {
+  layerId: LayerName;
   onUnitMouseDown: (id: string) => void;
   onUnitHover: (id: string | null) => void;
   onDragPrimaryChange: (id: string | null) => void;
   lastPrimaryPosRef: React.MutableRefObject<{ x: number; y: number } | null>;
 }
 
-function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrimaryPosRef }: UnitLayerProps) {
-  const units = useStore(s => s.units);
+function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrimaryPosRef }: UnitLayerProps) {
+  const units = useStore(s => s.units).filter(u => u.layerId === layerId);
   const unitsVisible = useStore(s => s.layers.units);
   const selectedIds = useStore(s => s.selectedIds);
   const activeTool = useStore(s => s.activeTool);
@@ -490,6 +498,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
         const isRect = u.baseShape === 'rect';
 
         const handleClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+          if (activeInteractionLayer !== 'all' && activeInteractionLayer !== u.layerId) return;
           if (activeTool !== 'select' || objectsLocked) return;
           e.cancelBubble = true;
           if (e.evt.shiftKey) {
@@ -506,10 +515,19 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
             id={`unit-${u.id}`}
             x={u.x} y={u.y}
             rotation={u.rotation}
-            draggable={draggable}
-            onMouseEnter={() => { if (activeTool === 'select' && !isDraggingRef.current) onUnitHover(u.id); }}
-            onMouseLeave={() => onUnitHover(null)}
-            onMouseDown={() => { if (activeTool === 'select') onUnitMouseDown(u.id); }}
+            draggable={draggable && (activeInteractionLayer === 'all' || activeInteractionLayer === u.layerId)}
+            onMouseEnter={() => {
+              if (activeInteractionLayer !== 'all' && activeInteractionLayer !== u.layerId) return;
+              if (activeTool === 'select' && !isDraggingRef.current) onUnitHover(u.id);
+            }}
+            onMouseLeave={() => {
+              if (activeInteractionLayer !== 'all' && activeInteractionLayer !== u.layerId) return;
+              onUnitHover(null);
+            }}
+            onMouseDown={() => {
+              if (activeInteractionLayer !== 'all' && activeInteractionLayer !== u.layerId) return;
+              if (activeTool === 'select') onUnitMouseDown(u.id);
+            }}
             onDragStart={() => handleDragStart(u)}
             onDragMove={(e) => handleDragMove(u, e)}
             onDragEnd={(e) => handleDragEnd(u, e)}
@@ -590,7 +608,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
           </Group>
         );
       })()}
-    </Layer>
+    </Group>
   );
 }
 
@@ -709,6 +727,7 @@ export function BoardCanvas() {
   const setViewport = useStore(s => s.setViewport);
   const ruler = useStore(s => s.ruler);
   const setRuler = useStore(s => s.setRuler);
+  const activeInteractionLayer = useStore(s => s.activeInteractionLayer);
   const addUnit = useStore(s => s.addUnit);
   const addUnitsBatch = useStore(s => s.addUnitsBatch);
   const addTerrain = useStore(s => s.addTerrain);
@@ -1111,17 +1130,48 @@ export function BoardCanvas() {
       const h = Math.abs(pos.y - sy);
 
       if (w > 5 || h > 5) {
-        const inBox = units.filter(u => {
-          const rW = mmToPxUtil(u.baseWidthMm, ppi) / 2;
-          const rH = mmToPxUtil(u.baseHeightMm, ppi) / 2;
-          return u.x + rW >= x && u.x - rW <= x + w &&
-                 u.y + rH >= y && u.y - rH <= y + h;
-        }).map(u => u.id);
+        const { activeInteractionLayer: ail, terrain, drawings } = useStore.getState();
+        const inBoxIds: string[] = [];
+
+        // Unit selection
+        if (ail === 'all' || ail === 'units') {
+          inBoxIds.push(...units.filter(u => {
+            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== u.layerId) return false;
+            const rW = mmToPxUtil(u.baseWidthMm, ppi) / 2;
+            const rH = mmToPxUtil(u.baseHeightMm, ppi) / 2;
+            return u.x + rW >= x && u.x - rW <= x + w &&
+                   u.y + rH >= y && u.y - rH <= y + h;
+          }).map(u => u.id));
+        }
+
+        // Terrain selection
+        if (ail === 'all' || ail === 'terrain') {
+          inBoxIds.push(...terrain.filter(t => {
+            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== t.layerId) return false;
+            for (let i = 0; i < t.points.length; i += 2) {
+              const px = t.points[i], py = t.points[i + 1];
+              if (px >= x && px <= x + w && py >= y && py <= y + h) return true;
+            }
+            return false;
+          }).map(t => t.id));
+        }
+
+        // Drawings selection
+        if (ail === 'all' || ail === 'drawings') {
+          inBoxIds.push(...drawings.filter(d => {
+            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== d.layerId) return false;
+            for (let i = 0; i < d.points.length; i += 2) {
+              const px = d.points[i], py = d.points[i + 1];
+              if (px >= x && px <= x + w && py >= y && py <= y + h) return true;
+            }
+            return false;
+          }).map(d => d.id));
+        }
         
         if (e.evt.shiftKey) {
-          inBox.forEach(id => toggleSelection(id));
+          inBoxIds.forEach(id => toggleSelection(id));
         } else {
-          setSelectedIds(inBox);
+          setSelectedIds(inBoxIds);
         }
       }
       selBoxStart.current = null;
@@ -1358,16 +1408,21 @@ export function BoardCanvas() {
 
         <MapImageLayer />
         <GridLayer />
-        <TerrainLayer onTerrainMouseDown={(id) => { heldTerrainIdRef.current = id; }} />
-        <DrawingLayer />
-        <LosLayer />
-        <HoverLosLayer hoveredUnitId={hoveredUnitId} />
-        <UnitLayer
-          onUnitMouseDown={(id) => { heldUnitIdRef.current = id; }}
-          onUnitHover={setHoveredUnitId}
-          onDragPrimaryChange={(id) => { dragPrimaryIdRef.current = id; }}
-          lastPrimaryPosRef={lastPrimaryPosRef}
-        />
+        {[('terrain' as LayerName), ('drawings' as LayerName), ('units' as LayerName)].map(layerId => (
+          <Layer key={layerId}>
+            <TerrainLayer layerId={layerId} onTerrainMouseDown={(id) => { heldTerrainIdRef.current = id; }} />
+            <DrawingLayer layerId={layerId} />
+            {layerId === 'units' && <LosLayer />}
+            {layerId === 'units' && <HoverLosLayer hoveredUnitId={hoveredUnitId} />}
+            <UnitLayer
+              layerId={layerId}
+              onUnitMouseDown={(id) => { heldUnitIdRef.current = id; }}
+              onUnitHover={setHoveredUnitId}
+              onDragPrimaryChange={(id) => { dragPrimaryIdRef.current = id; }}
+              lastPrimaryPosRef={lastPrimaryPosRef}
+            />
+          </Layer>
+        ))}
 
         {/* Drawing preview */}
         {drawState.drawing && (

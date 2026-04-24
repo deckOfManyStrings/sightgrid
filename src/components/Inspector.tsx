@@ -21,6 +21,9 @@ export function Inspector() {
   const setBoard = useStore(s => s.setBoard);
   const layers = useStore(s => s.layers);
   const toggleLayer = useStore(s => s.toggleLayer);
+  const activeInteractionLayer = useStore(s => s.activeInteractionLayer);
+  const setActiveInteractionLayer = useStore(s => s.setActiveInteractionLayer);
+  const changeLayer = useStore(s => s.changeLayer);
   const objectsVisible = useStore(s => s.objectsVisible);
   const objectsLocked = useStore(s => s.objectsLocked);
   const toggleObjectsVisible = useStore(s => s.toggleObjectsVisible);
@@ -179,12 +182,52 @@ export function Inspector() {
     </button>
   );
 
+  const layerSelect = (currentLayer: string, onChange: (newLayer: LayerName) => void) => (
+    <>
+      {label('Assigned Layer')}
+      <select
+        value={currentLayer}
+        onChange={e => onChange(e.target.value as LayerName)}
+        style={{
+          width: '100%', background: '#1e293b', border: '1px solid #334155',
+          color: '#e2e8f0', borderRadius: 6, padding: '5px 8px', fontSize: 11, marginBottom: 8,
+        }}
+      >
+        <option value="units">🔵 Units Layer</option>
+        <option value="terrain">🧱 Terrain Layer</option>
+        <option value="drawings">✎ Drawings Layer</option>
+      </select>
+    </>
+  );
+
   return (
     <div style={{
       width: 220, background: '#0a0f1a', borderLeft: '1px solid #1e293b',
       overflowY: 'auto', padding: 12, flexShrink: 0,
       fontSize: 12, color: '#e2e8f0',
     }}>
+
+      {/* Active Interaction Layer */}
+      {selectedIds.length === 0 && section('Interaction Layer', (
+        <>
+          <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 8, lineHeight: 1.4 }}>
+            Restrict your clicks to a specific layer so you don't accidentally move other items.
+          </div>
+          <select
+            value={activeInteractionLayer}
+            onChange={e => setActiveInteractionLayer(e.target.value as any)}
+            style={{
+              width: '100%', background: '#1e293b', border: '1px solid #334155',
+              color: '#a5b4fc', borderRadius: 6, padding: '6px 8px', fontSize: 12, marginBottom: 8, fontWeight: 600,
+            }}
+          >
+            <option value="all">🌐 All Layers</option>
+            <option value="units">🔵 Units Layer</option>
+            <option value="terrain">🧱 Terrain Layer</option>
+            <option value="drawings">✎ Drawings Layer</option>
+          </select>
+        </>
+      ))}
 
       {/* Board Setup */}
       {section('Board Setup', (
@@ -483,6 +526,7 @@ export function Inspector() {
       {/* Selected Unit Properties */}
       {hasSingleUnit && u && section('Unit Properties', (
         <>
+          {layerSelect(u.layerId, (l) => changeLayer([u.id], l))}
           {label('Name')}
           {input(u.name, v => updateUnit(u.id, { name: v }))}
           {label('Color')}
@@ -539,6 +583,7 @@ export function Inspector() {
       {/* Selected Terrain */}
       {selectedTerrain && section('Terrain', (
         <>
+          {layerSelect(selectedTerrain.layerId, (l) => changeLayer([selectedTerrain.id], l))}
           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
             Shape: <span style={{ color: '#e2e8f0', textTransform: 'capitalize' }}>{selectedTerrain.shape}</span>
           </div>
@@ -559,6 +604,7 @@ export function Inspector() {
       {/* Selected Drawing */}
       {selectedDrawings.length === 1 && selectedIds.length === 1 && section('Drawing', (
         <>
+          {layerSelect(selectedDrawings[0].layerId, (l) => changeLayer([selectedDrawings[0].id], l))}
           <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 10 }}>
             Type: <span style={{ color: '#e2e8f0' }}>Freehand Line</span>
           </div>
@@ -568,6 +614,7 @@ export function Inspector() {
 
       {selectedIds.length > 1 && section(`${selectedIds.length} Selected`, (
         <>
+          {layerSelect('mixed', (l) => changeLayer(selectedIds, l))}
           {/* ── Group: Line of Sight ── */}
           <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>Line of Sight</div>
           {(() => {
