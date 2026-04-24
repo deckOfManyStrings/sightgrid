@@ -502,10 +502,40 @@ export const useStore = create<AppStore>()(
       get().pushHistory();
     },
     loadTemplate: (template) => {
+      const currentCanvasWidth = get().canvasWidth;
+      const ratio = template.savedCanvasWidth && template.savedCanvasWidth > 0
+        ? currentCanvasWidth / template.savedCanvasWidth
+        : 1;
+
       set((s) => {
-        s.terrain = template.terrain() as any;
-        s.units = [];
-        s.drawings = [];
+        // Apply board state if provided
+        if (template.board) {
+          Object.assign(s.board, template.board);
+          if (ratio !== 1) {
+            s.board.mapX = ((template.board as any).mapX ?? 0) * ratio;
+            s.board.mapY = ((template.board as any).mapY ?? 0) * ratio;
+          }
+        }
+        // Terrain with scaling
+        s.terrain = template.terrain().map(t => ({
+          ...t,
+          points: ratio === 1 ? t.points : t.points.map((v: number) => v * ratio),
+        })) as any;
+        // Optional units
+        s.units = template.units
+          ? template.units().map(u => ({
+              ...u,
+              x: u.x * ratio,
+              y: u.y * ratio,
+            }))
+          : [];
+        // Optional drawings
+        s.drawings = template.drawings
+          ? template.drawings().map(d => ({
+              ...d,
+              points: ratio === 1 ? d.points : d.points.map((v: number) => v * ratio),
+            })) as any
+          : [];
         s.selectedIds = [];
         s.ruler = { active: false, startX: 0, startY: 0, endX: 0, endY: 0 };
       });
