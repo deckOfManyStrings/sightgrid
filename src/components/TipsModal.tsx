@@ -18,7 +18,9 @@ const TIPS: { keys: string[]; description: string; category: string }[] = [
   { keys: ['Enter'],        description: 'Complete the current polygon while using the Polygon tool', category: 'Drawing' },
   { keys: ['Esc'],          description: 'Cancel and discard the polygon you are drawing',            category: 'Drawing' },
   // Selection & editing
-  { keys: ['Shift', 'Click'], description: 'Add a unit to the current selection without deselecting others', category: 'Selection' },
+  { keys: ['Shift', 'Click'], description: 'Add a unit or terrain piece to the selection without deselecting others', category: 'Selection' },
+  { keys: ['Hold', 'Scroll'], description: 'Hold mouse on a selected unit then scroll to rotate it (or the whole group)', category: 'Selection' },
+  { keys: ['Hold', 'Scroll'], description: 'Hold mouse on selected terrain then scroll to rotate it around its centroid', category: 'Selection' },
   { keys: ['Del'],          description: 'Delete the selected unit(s), terrain, or drawing',         category: 'Selection' },
   // History
   { keys: ['⌘ / Ctrl', 'Z'], description: 'Undo the last action',                                   category: 'History' },

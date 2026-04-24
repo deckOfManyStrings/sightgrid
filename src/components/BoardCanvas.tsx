@@ -50,13 +50,18 @@ function GridLayer() {
 }
 
 // ─── Terrain Layer ────────────────────────────────────────────────────────────
-function TerrainLayer() {
+interface TerrainLayerProps {
+  onTerrainMouseDown: (id: string) => void;
+}
+
+function TerrainLayer({ onTerrainMouseDown }: TerrainLayerProps) {
   const terrain = useStore(s => s.terrain);
   const terrainVisible = useStore(s => s.layers.terrain);
   const selectedIds = useStore(s => s.selectedIds);
   const activeTool = useStore(s => s.activeTool);
   const updateTerrain = useStore(s => s.updateTerrain);
   const setSelectedIds = useStore(s => s.setSelectedIds);
+  const toggleSelection = useStore(s => s.toggleSelection);
   const objectsVisible = useStore(s => s.objectsVisible);
   const objectsLocked = useStore(s => s.objectsLocked);
 
@@ -76,8 +81,21 @@ function TerrainLayer() {
         const color = tagColor(t);
         const commonProps = {
           opacity: t.opacity,
-          onClick: () => {
-            if (activeTool === 'select' && !objectsLocked) setSelectedIds([t.id]);
+          onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => {
+            if (activeTool === 'select' && !objectsLocked) {
+              e.cancelBubble = true;
+              onTerrainMouseDown(t.id);
+            }
+          },
+          onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
+            if (activeTool === 'select' && !objectsLocked) {
+              e.cancelBubble = true;
+              if (e.evt.shiftKey) {
+                toggleSelection(t.id);
+              } else {
+                setSelectedIds([t.id]);
+              }
+            }
           },
           draggable: activeTool === 'select' && !t.locked && !objectsLocked,
           onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -666,6 +684,8 @@ export function BoardCanvas() {
   const polyPointsRef = useRef<number[]>([]);
   // Tracks whether the mouse is held down on a unit (enables scroll-to-rotate)
   const heldUnitIdRef = useRef<string | null>(null);
+  // Tracks whether the mouse is held down on a terrain piece (enables scroll-to-rotate)
+  const heldTerrainIdRef = useRef<string | null>(null);
   // Absorb momentum scroll after rotating
   const isRotatingRef = useRef(false);
   const rotateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1108,9 +1128,12 @@ export function BoardCanvas() {
     return () => window.removeEventListener('keydown', onKey);
   }, [addTerrain]);
 
-  // Release unit-hold on global mouseup
+  // Release unit/terrain hold on global mouseup
   useEffect(() => {
-    const onUp = () => { heldUnitIdRef.current = null; };
+    const onUp = () => {
+      heldUnitIdRef.current = null;
+      heldTerrainIdRef.current = null;
+    };
     window.addEventListener('mouseup', onUp);
     return () => window.removeEventListener('mouseup', onUp);
   }, []);
@@ -1187,6 +1210,60 @@ export function BoardCanvas() {
       }
     }
 
+    // Scroll-to-rotate: when holding mouse on a terrain piece, wheel rotates selected terrain
+    if (heldTerrainIdRef.current) {
+      const { selectedIds: ids, terrain: currentTerrain, updateTerrain: updT } = useStore.getState();
+      if (ids.length > 0 && ids.includes(heldTerrainIdRef.current)) {
+        const ROTATE_STEP = 5; // degrees per scroll tick
+        const delta = e.evt.deltaY > 0 ? ROTATE_STEP : -ROTATE_STEP;
+        const selectedTerrain = ids
+          .map(id => currentTerrain.find(t => t.id === id))
+          .filter(Boolean) as TerrainObject[];
+
+        if (selectedTerrain.length === 0) return;
+
+        // Compute centroid across all selected terrain points
+        let cx = 0, cy = 0, totalPts = 0;
+        selectedTerrain.forEach(t => {
+          for (let i = 0; i < t.points.length; i += 2) {
+            cx += t.points[i];
+            cy += t.points[i + 1];
+            totalPts++;
+          }
+        });
+        if (totalPts > 0) { cx /= totalPts; cy /= totalPts; }
+
+        const rad = (delta * Math.PI) / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        selectedTerrain.forEach(t => {
+          const newPoints = t.points.map((v, i) => {
+            if (i % 2 === 0) {
+              // x coordinate
+              const px = v - cx;
+              const py = t.points[i + 1] - cy;
+              return cx + px * cos - py * sin;
+            } else {
+              // y coordinate
+              const px = t.points[i - 1] - cx;
+              const py = v - cy;
+              return cy + px * sin + py * cos;
+            }
+          });
+          updT(t.id, { points: newPoints });
+        });
+
+        isRotatingRef.current = true;
+        if (rotateTimeoutRef.current !== null) clearTimeout(rotateTimeoutRef.current);
+        rotateTimeoutRef.current = setTimeout(() => {
+          isRotatingRef.current = false;
+        }, 300);
+
+        return; // don't zoom
+      }
+    }
+
     // Suppress zoom if we are currently absorbing momentum scroll from a recent rotation
     if (isRotatingRef.current) {
       if (rotateTimeoutRef.current !== null) clearTimeout(rotateTimeoutRef.current);
@@ -1241,7 +1318,7 @@ export function BoardCanvas() {
 
         <MapImageLayer />
         <GridLayer />
-        <TerrainLayer />
+        <TerrainLayer onTerrainMouseDown={(id) => { heldTerrainIdRef.current = id; }} />
         <DrawingLayer />
         <LosLayer />
         <HoverLosLayer hoveredUnitId={hoveredUnitId} />

@@ -3,6 +3,7 @@ import { useStore, getPixelsPerInch } from '../store';
 import { AccountButton } from './AccountButton';
 import { useAuth } from '../contexts/AuthContext';
 import { TipsModal } from './TipsModal';
+import { TemplatesModal } from './TemplatesModal';
 
 interface ToolbarProps {
   onOpenScenarios: () => void;
@@ -37,6 +38,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
   const pixelsPerInch = getPixelsPerInch(canvasWidth, boardWidthInches);
   const { user } = useAuth();
   const [showTips, setShowTips] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const deleteSelected = () => {
     const terrainIds = selectedIds.filter(id => terrain.some(t => t.id === id));
@@ -150,6 +152,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
       </button>
 
 
+      {tbtn('🗺️', 'Templates', () => setShowTemplates(true), false, 'primary')}
       {tbtn('✕', 'Clear', clearBoard, false, 'danger')}
 
       {divider()}
@@ -221,6 +224,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
     </div>
 
     {showTips && <TipsModal onClose={() => setShowTips(false)} />}
+    {showTemplates && <TemplatesModal onClose={() => setShowTemplates(false)} />}
   </>
   );
 }

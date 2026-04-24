@@ -6,6 +6,7 @@ import type {
   UnitToken, HistorySnapshot, RulerState, UnitTemplate,
   DrawingObject, LayerName
 } from './types';
+import type { ScenarioTemplate } from './templates';
 import {
   DEFAULT_BOARD_WIDTH_INCHES, DEFAULT_BOARD_HEIGHT_INCHES, MAX_HISTORY_SIZE
 } from './constants';
@@ -100,6 +101,7 @@ export interface AppStore {
   exportJSON: () => string;
   importJSON: (json: string) => void;
   clearBoard: () => void;
+  loadTemplate: (template: ScenarioTemplate) => void;
 }
 
 // Default Template
@@ -461,6 +463,16 @@ export const useStore = create<AppStore>()(
       get().pushHistory();
       set((s) => {
         s.terrain = [];
+        s.units = [];
+        s.drawings = [];
+        s.selectedIds = [];
+        s.ruler = { active: false, startX: 0, startY: 0, endX: 0, endY: 0 };
+      });
+    },
+    loadTemplate: (template) => {
+      get().pushHistory();
+      set((s) => {
+        s.terrain = template.terrain() as any;
         s.units = [];
         s.drawings = [];
         s.selectedIds = [];
