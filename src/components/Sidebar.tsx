@@ -36,11 +36,6 @@ const toolGroups = [
       { id: 'draw_line' as ActiveTool, icon: '╱', label: 'Line', tooltip: 'Draw a straight line', shortcut: '' },
       { id: 'draw_rect' as ActiveTool, icon: '▭', label: 'Rect', tooltip: 'Draw a rectangle', shortcut: '' },
       { id: 'draw_polygon' as ActiveTool, icon: '⬡', label: 'Polygon', tooltip: 'Draw a polygon', shortcut: '' },
-    ],
-  },
-  {
-    label: 'Eraser',
-    slot: [
       { 
         id: 'eraser' as ActiveTool, 
         icon: (
@@ -50,7 +45,7 @@ const toolGroups = [
             <path d="m13.3 9 5.6 5.6" />
           </svg>
         ), 
-        label: 'Eraser', tooltip: 'Erase drawings', shortcut: 'E',
+        label: 'Erase', tooltip: 'Erase drawings', shortcut: 'E',
       },
     ],
   },
