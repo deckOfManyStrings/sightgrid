@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore, getPixelsPerInch } from '../store';
 import { AccountButton } from './AccountButton';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,12 +35,44 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
   const canvasWidth = useStore(s => s.canvasWidth);
   const clearBoard = useStore(s => s.clearBoard);
   const resetView = useStore(s => s.resetView);
+  const exportJSON = useStore(s => s.exportJSON);
+  const importJSON = useStore(s => s.importJSON);
+
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const pixelsPerInch = getPixelsPerInch(canvasWidth, boardWidthInches);
   const { user } = useAuth();
   const { isPro, openProModal } = usePro();
   const [showTips, setShowTips] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+
+  const handleExport = () => {
+    const json = exportJSON();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `firelane-map-${new Date().toISOString().slice(0, 10)}.sightgrid.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (text) importJSON(text);
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-imported
+    e.target.value = '';
+  };
 
   const deleteSelected = () => {
     const terrainIds = selectedIds.filter(id => terrain.some(t => t.id === id));
@@ -126,6 +158,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
       height: 48, background: '#0a0f1a', borderBottom: '1px solid #1e293b',
       display: 'flex', alignItems: 'center', paddingInline: 12, gap: 6,
       flexShrink: 0, zIndex: 20,
+      overflowX: 'auto', overflowY: 'hidden',
     }}>
       {/* Brand */}
       <div style={{
@@ -155,7 +188,18 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
 
 
       {tbtn('🗺️', 'Templates', () => setShowTemplates(true), false, 'primary')}
+      {tbtn('⬇️', 'Export', handleExport)}
+      {tbtn('⬆️', 'Import', handleImport)}
       {tbtn('✕', 'Clear', clearBoard, false, 'danger')}
+
+      {/* Hidden file input for import */}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,.sightgrid.json"
+        style={{ display: 'none' }}
+        onChange={handleImportFile}
+      />
 
       {divider()}
 
@@ -184,7 +228,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
       </span>
 
       {/* Right side controls — pushed to the far right */}
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, paddingLeft: 8 }}>
         <button
           onClick={() => setShowTips(s => !s)}
           title="Keyboard shortcuts (?)"
