@@ -774,36 +774,62 @@ export function BoardCanvas() {
 
   // WASD smooth pan
   useEffect(() => {
-    const PAN_SPEED = 8; // px per frame at 100% zoom
+    const MAX_SPEED = 10;
+    const ACCEL = 0.8;
+    const FRICTION = 0.8;
+
+    let vx = 0;
+    let vy = 0;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd'].includes(k)) {
         e.preventDefault();
-        wasdKeys.current.add(k);
-        if (rafId.current === null) startLoop();
+        if (!wasdKeys.current.has(k)) {
+          wasdKeys.current.add(k);
+          if (rafId.current === null) startLoop();
+        }
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
       wasdKeys.current.delete(e.key.toLowerCase());
-      if (wasdKeys.current.size === 0 && rafId.current !== null) {
-        cancelAnimationFrame(rafId.current);
-        rafId.current = null;
-      }
     };
 
     const startLoop = () => {
       const loop = () => {
         const keys = wasdKeys.current;
-        if (keys.size === 0) { rafId.current = null; return; }
-        const { stageX: sx, stageY: sy, stageScale: sc, setViewport: sv } = useStore.getState();
-        let dx = 0, dy = 0;
-        if (keys.has('a')) dx += PAN_SPEED;
-        if (keys.has('d')) dx -= PAN_SPEED;
-        if (keys.has('w')) dy += PAN_SPEED;
-        if (keys.has('s')) dy -= PAN_SPEED;
-        sv(sx + dx, sy + dy, sc);
+        
+        let ax = 0, ay = 0;
+        if (keys.has('a')) ax += ACCEL;
+        if (keys.has('d')) ax -= ACCEL;
+        if (keys.has('w')) ay += ACCEL;
+        if (keys.has('s')) ay -= ACCEL;
+
+        vx += ax;
+        vy += ay;
+
+        if (ax === 0) vx *= FRICTION;
+        if (ay === 0) vy *= FRICTION;
+
+        if (vx > MAX_SPEED) vx = MAX_SPEED;
+        if (vx < -MAX_SPEED) vx = -MAX_SPEED;
+        if (vy > MAX_SPEED) vy = MAX_SPEED;
+        if (vy < -MAX_SPEED) vy = -MAX_SPEED;
+
+        // Stop loop only when completely physically arrested and no keys pressed
+        if (keys.size === 0 && Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
+          vx = 0;
+          vy = 0;
+          rafId.current = null;
+          return;
+        }
+
+        if (Math.abs(vx) > 0.05 || Math.abs(vy) > 0.05) {
+          const { stageX: sx, stageY: sy, stageScale: sc, setViewport: sv } = useStore.getState();
+          sv(sx + vx, sy + vy, sc);
+        }
+
         rafId.current = requestAnimationFrame(loop);
       };
       rafId.current = requestAnimationFrame(loop);
