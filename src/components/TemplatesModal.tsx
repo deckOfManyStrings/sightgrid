@@ -218,6 +218,22 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
                 </button>
               );
             })}
+
+            {/* More coming soon */}
+            <div style={{
+              marginTop: 4,
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: '1px dashed rgba(99,102,241,0.2)',
+              background: 'rgba(99,102,241,0.04)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 20, flexShrink: 0, opacity: 0.5 }}>🕐</span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 2 }}>More coming soon</div>
+                <div style={{ fontSize: 10, color: '#334155', lineHeight: 1.4 }}>New tables & layouts on the way</div>
+              </div>
+            </div>
           </div>
 
           {/* Right: preview + detail */}
@@ -276,21 +292,6 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
                 );
               })()}
             </div>
-
-            {/* Warning if board has content */}
-            {hasContent && (
-              <div style={{
-                display: 'flex', gap: 10, alignItems: 'flex-start',
-                padding: '10px 14px', borderRadius: 10,
-                background: 'rgba(234,179,8,0.08)',
-                border: '1px solid rgba(234,179,8,0.2)',
-              }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-                <div style={{ fontSize: 12, color: '#fcd34d', lineHeight: 1.6 }}>
-                  <strong>Your current board has content.</strong> Loading a template will clear all units, terrain, and drawings. This can be undone with <kbd style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 3, padding: '0 4px', fontSize: 10, color: '#a5b4fc', fontFamily: 'monospace' }}>⌘Z</kbd>.
-                </div>
-              </div>
-            )}
 
             {/* Load button */}
             <div style={{ marginTop: 'auto' }}>
