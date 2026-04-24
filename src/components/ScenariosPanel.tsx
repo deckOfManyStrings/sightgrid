@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePro } from '../contexts/ProContext';
 import { useStore } from '../store';
 import {
   listScenarios, saveScenario, updateScenario,
@@ -19,6 +20,7 @@ type PanelState = 'list' | 'saving' | 'overwriting';
 
 export function ScenariosPanel({ open, onClose, pendingSave, onClearPendingSave }: ScenariosPanelProps) {
   const { user, signOut } = useAuth();
+  const { isPro, openProModal } = usePro();
   const exportJSON = useStore(s => s.exportJSON);
   const importJSON = useStore(s => s.importJSON);
   const board = useStore(s => s.board);
@@ -161,7 +163,7 @@ export function ScenariosPanel({ open, onClose, pendingSave, onClearPendingSave 
     }
   };
 
-  const atLimit = scenarios.length >= MAX_SCENARIOS;
+  const atLimit = !isPro && scenarios.length >= MAX_SCENARIOS;
 
   if (!open) return null;
 
@@ -222,13 +224,24 @@ export function ScenariosPanel({ open, onClose, pendingSave, onClearPendingSave 
           {panelState === 'list' && (
             <div>
               {atLimit ? (
-                <div>
-                  <div style={{ fontSize: 11, color: '#f59e0b', marginBottom: 6 }}>
-                    ⚠ Free accounts can save up to 3 scenarios.
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600, marginBottom: 4 }}>
+                    ⚠ Save Limit Reached
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 10 }}>
-                    Delete one to save a new scenario, or overwrite an existing one below.
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 10, lineHeight: 1.4 }}>
+                    Free accounts can save up to 3 scenarios. Overwrite an existing one below, or upgrade to Pro for unlimited saves.
                   </div>
+                  <button
+                    onClick={openProModal}
+                    style={{
+                      width: '100%', padding: '8px', borderRadius: 8, border: 'none',
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}
+                  >
+                    <span>👑</span> Upgrade for Infinite Saves
+                  </button>
                 </div>
               ) : null}
               <div style={{ display: 'flex', gap: 8 }}>
@@ -336,8 +349,10 @@ export function ScenariosPanel({ open, onClose, pendingSave, onClearPendingSave 
           <div style={{
             fontSize: 10, fontWeight: 700, color: '#475569', textTransform: 'uppercase',
             letterSpacing: '0.1em', marginBottom: 10,
+            display: 'flex', justifyContent: 'space-between',
           }}>
-            Saved Scenarios ({scenarios.length}/{MAX_SCENARIOS})
+            <span>Saved Scenarios</span>
+            <span>{scenarios.length}{isPro ? '' : ` / ${MAX_SCENARIOS}`}</span>
           </div>
 
           {loading && (

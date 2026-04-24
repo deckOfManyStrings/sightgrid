@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Stage, Layer, Line, Rect } from 'react-konva';
 import { useStore } from '../store';
+import { usePro } from '../contexts/ProContext';
 import { TEMPLATES } from '../templates';
 import type { ScenarioTemplate } from '../templates';
 
@@ -65,8 +66,9 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
   const units = useStore(s => s.units);
   const drawings = useStore(s => s.drawings) || [];
   const loadTemplate = useStore(s => s.loadTemplate);
+  const { isPro, openProModal } = usePro();
 
-  const [selected, setSelected] = useState<ScenarioTemplate>(TEMPLATES[1]);
+  const [selected, setSelected] = useState<ScenarioTemplate>(TEMPLATES[0]); // changed default to 0 just in case 1 is locked? No, 1 is fine since we lock at 2.
   const [confirmTarget, setConfirmTarget] = useState<ScenarioTemplate | null>(null);
 
   const hasContent = terrain.length > 0 || units.length > 0 || drawings.length > 0;
@@ -179,30 +181,43 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
             padding: '12px 10px', borderRight: '1px solid #1e293b',
             display: 'flex', flexDirection: 'column', gap: 6,
           }}>
-            {TEMPLATES.map(tpl => (
-              <button
-                key={tpl.id}
-                className={`tmpl-card${selected.id === tpl.id ? ' active' : ''}`}
-                onClick={() => setSelected(tpl)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                  border: '1px solid #1e293b',
-                  background: 'transparent', textAlign: 'left',
-                  transition: 'all 0.15s', width: '100%',
-                }}
-              >
-                <span style={{ fontSize: 22, flexShrink: 0 }}>{tpl.emoji}</span>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 2 }}>
-                    {tpl.name}
+            {TEMPLATES.map((tpl, idx) => {
+              const isLocked = !isPro && idx >= 2;
+              return (
+                <button
+                  key={tpl.id}
+                  className={`tmpl-card${selected.id === tpl.id ? ' active' : ''}`}
+                  onClick={() => setSelected(tpl)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                    border: '1px solid #1e293b',
+                    background: 'transparent', textAlign: 'left',
+                    transition: 'all 0.15s', width: '100%',
+                    opacity: isLocked && selected.id !== tpl.id ? 0.6 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: 22, flexShrink: 0, position: 'relative' }}>
+                    {tpl.emoji}
+                    {isLocked && (
+                      <span style={{
+                        position: 'absolute', bottom: -4, right: -4,
+                        fontSize: 10, background: '#0a0f1a', borderRadius: '50%',
+                        padding: 2, border: '1px solid #334155',
+                      }}>🔒</span>
+                    )}
+                  </span>
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tpl.name}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {tpl.subtitle}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 10, color: '#475569', lineHeight: 1.4 }}>
-                    {tpl.subtitle}
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {/* Right: preview + detail */}
@@ -279,23 +294,49 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
 
             {/* Load button */}
             <div style={{ marginTop: 'auto' }}>
-              <button
-                onClick={() => handleLoad(selected)}
-                style={{
-                  width: '100%', padding: '11px',
-                  background: 'linear-gradient(135deg, rgba(99,102,241,0.7), rgba(139,92,246,0.7))',
-                  border: '1px solid rgba(99,102,241,0.5)',
-                  color: '#e2e8f0', borderRadius: 10,
-                  cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                  transition: 'all 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.7), rgba(139,92,246,0.7))'; }}
-              >
-                <span>🗺️</span>
-                Load "{selected.name}"
-              </button>
+              {(() => {
+                const isLocked = !isPro && TEMPLATES.findIndex(t => t.id === selected.id) >= 2;
+                if (isLocked) {
+                  return (
+                    <button
+                      onClick={openProModal}
+                      style={{
+                        width: '100%', padding: '11px',
+                        background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.2))',
+                        border: '1px solid rgba(245,158,11,0.5)',
+                        color: '#fcd34d', borderRadius: 10,
+                        cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                        transition: 'all 0.2s',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(245,158,11,0.3), rgba(217,119,6,0.3))'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.2))'; }}
+                    >
+                      <span>👑</span>
+                      Unlock Pro to Load
+                    </button>
+                  );
+                }
+                return (
+                  <button
+                    onClick={() => handleLoad(selected)}
+                    style={{
+                      width: '100%', padding: '11px',
+                      background: 'linear-gradient(135deg, rgba(99,102,241,0.7), rgba(139,92,246,0.7))',
+                      border: '1px solid rgba(99,102,241,0.5)',
+                      color: '#e2e8f0', borderRadius: 10,
+                      cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                      transition: 'all 0.2s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9))'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(99,102,241,0.7), rgba(139,92,246,0.7))'; }}
+                  >
+                    <span>🗺️</span>
+                    Load "{selected.name}"
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStore, getPixelsPerInch } from '../store';
 import { AccountButton } from './AccountButton';
 import { useAuth } from '../contexts/AuthContext';
+import { usePro } from '../contexts/ProContext';
 import { TipsModal } from './TipsModal';
 import { TemplatesModal } from './TemplatesModal';
 
@@ -37,6 +38,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
 
   const pixelsPerInch = getPixelsPerInch(canvasWidth, boardWidthInches);
   const { user } = useAuth();
+  const { isPro, openProModal } = usePro();
   const [showTips, setShowTips] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -199,6 +201,24 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
           <span style={{ fontSize: 13 }}>⌨️</span>
           <span>Shortcuts</span>
         </button>
+        {!isPro && (
+          <button
+            onClick={openProModal}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              border: 'none', color: '#fff', borderRadius: 8,
+              padding: '4px 10px', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', transition: 'all 0.15s',
+              boxShadow: '0 2px 8px rgba(245,158,11,0.3)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(245,158,11,0.4)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(245,158,11,0.3)'; }}
+          >
+            <span>👑</span>
+            <span>Go Pro</span>
+          </button>
+        )}
         <a 
           href="https://buy.stripe.com/dRm5kF4yOcSdgOV4G30Fi00"
           target="_blank"

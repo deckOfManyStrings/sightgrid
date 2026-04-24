@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
+import { ProProvider } from './contexts/ProContext';
 import { Toolbar } from './components/Toolbar';
 import { Sidebar } from './components/Sidebar';
 import { Inspector } from './components/Inspector';
@@ -29,7 +30,8 @@ function App() {
 
   return (
     <AuthProvider>
-      <div className="app-shell">
+      <ProProvider>
+        <div className="app-shell">
         <Toolbar
           onOpenScenarios={() => setScenariosPanelOpen(true)}
           onOpenAuth={() => setAuthModalOpen(true)}
@@ -64,6 +66,7 @@ function App() {
       />
       {/* Step-by-step tutorial (first-visit only) */}
       <Tutorial />
+      </ProProvider>
     </AuthProvider>
   );
 }
