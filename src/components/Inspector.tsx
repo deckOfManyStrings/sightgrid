@@ -31,6 +31,10 @@ export function Inspector() {
   const [showTemplateColorPicker, setShowTemplateColorPicker] = useState(false);
   const [showGroupColorPicker, setShowGroupColorPicker] = useState(false);
   const [groupRange, setGroupRange] = useState<string>('24');
+  const [editingMapScaleX, setEditingMapScaleX] = useState(false);
+  const [editingMapScaleY, setEditingMapScaleY] = useState(false);
+  const [tempMapScaleX, setTempMapScaleX] = useState<string>('');
+  const [tempMapScaleY, setTempMapScaleY] = useState<string>('');
 
   const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
 
@@ -254,23 +258,83 @@ export function Inspector() {
                   </button>
 
                   {/* Width Stretch */}
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>
-                    Width Stretch: {Math.round((board.mapScaleX ?? 1) * 100)}%
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Width Stretch:</span>
+                    {editingMapScaleX ? (
+                      <input
+                        autoFocus
+                        value={tempMapScaleX}
+                        onChange={(e) => setTempMapScaleX(e.target.value)}
+                        onBlur={() => {
+                          setEditingMapScaleX(false);
+                          const val = parseFloat(tempMapScaleX);
+                          if (!isNaN(val)) setBoard({ mapScaleX: val / 100 });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            setEditingMapScaleX(false);
+                            const val = parseFloat(tempMapScaleX);
+                            if (!isNaN(val)) setBoard({ mapScaleX: val / 100 });
+                          }
+                        }}
+                        style={{ width: 40, background: '#1e293b', border: '1px solid #6366f1', color: '#e2e8f0', fontSize: 11, textAlign: 'right', borderRadius: 4, padding: '2px 4px' }}
+                      />
+                    ) : (
+                      <span
+                        style={{ color: '#e2e8f0', cursor: 'text', padding: '2px 4px', background: 'rgba(51,65,85,0.4)', borderRadius: 4 }}
+                        onClick={() => {
+                          setTempMapScaleX(String(Math.round((board.mapScaleX ?? 1) * 100 * 10) / 10));
+                          setEditingMapScaleX(true);
+                        }}
+                      >
+                        {Math.round((board.mapScaleX ?? 1) * 100 * 10) / 10}%
+                      </span>
+                    )}
                   </div>
                   <input
-                    type="range" min={25} max={300} step={1}
-                    value={Math.round((board.mapScaleX ?? 1) * 100)}
+                    type="range" min={25} max={300} step={0.5}
+                    value={parseFloat(((board.mapScaleX ?? 1) * 100).toFixed(1))}
                     onChange={e => setBoard({ mapScaleX: +e.target.value / 100 })}
                     style={{ width: '100%', accentColor: '#fbbf24', marginBottom: 8 }}
                   />
 
                   {/* Height Stretch */}
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3 }}>
-                    Height Stretch: {Math.round((board.mapScaleY ?? 1) * 100)}%
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Height Stretch:</span>
+                    {editingMapScaleY ? (
+                      <input
+                        autoFocus
+                        value={tempMapScaleY}
+                        onChange={(e) => setTempMapScaleY(e.target.value)}
+                        onBlur={() => {
+                          setEditingMapScaleY(false);
+                          const val = parseFloat(tempMapScaleY);
+                          if (!isNaN(val)) setBoard({ mapScaleY: val / 100 });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            setEditingMapScaleY(false);
+                            const val = parseFloat(tempMapScaleY);
+                            if (!isNaN(val)) setBoard({ mapScaleY: val / 100 });
+                          }
+                        }}
+                        style={{ width: 40, background: '#1e293b', border: '1px solid #6366f1', color: '#e2e8f0', fontSize: 11, textAlign: 'right', borderRadius: 4, padding: '2px 4px' }}
+                      />
+                    ) : (
+                      <span
+                        style={{ color: '#e2e8f0', cursor: 'text', padding: '2px 4px', background: 'rgba(51,65,85,0.4)', borderRadius: 4 }}
+                        onClick={() => {
+                          setTempMapScaleY(String(Math.round((board.mapScaleY ?? 1) * 100 * 10) / 10));
+                          setEditingMapScaleY(true);
+                        }}
+                      >
+                        {Math.round((board.mapScaleY ?? 1) * 100 * 10) / 10}%
+                      </span>
+                    )}
                   </div>
                   <input
-                    type="range" min={25} max={300} step={1}
-                    value={Math.round((board.mapScaleY ?? 1) * 100)}
+                    type="range" min={25} max={300} step={0.5}
+                    value={parseFloat(((board.mapScaleY ?? 1) * 100).toFixed(1))}
                     onChange={e => setBoard({ mapScaleY: +e.target.value / 100 })}
                     style={{ width: '100%', accentColor: '#fbbf24', marginBottom: 8 }}
                   />
