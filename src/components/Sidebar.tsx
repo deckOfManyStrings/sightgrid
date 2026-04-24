@@ -90,11 +90,11 @@ export function Sidebar() {
           translate: -6px 0;
           transition: opacity 0.15s ease, translate 0.15s ease;
         }
-        .sg-tool-wrapper:hover .sg-tooltip {
+        .sg-tool-wrapper:hover > .sg-tooltip {
           opacity: 1;
           translate: 0 0;
         }
-        .sg-tooltip::before {
+        .sg-tooltip.sg-tooltip-right::before {
           content: '';
           position: absolute;
           right: 100%;
@@ -103,7 +103,7 @@ export function Sidebar() {
           border: 5px solid transparent;
           border-right-color: #334155;
         }
-        .sg-tooltip::after {
+        .sg-tooltip.sg-tooltip-right::after {
           content: '';
           position: absolute;
           right: calc(100% - 1px);
@@ -111,6 +111,30 @@ export function Sidebar() {
           transform: translateY(-50%);
           border: 5px solid transparent;
           border-right-color: #1e293b;
+        }
+        .sg-tooltip.sg-tooltip-bottom {
+          left: 50%;
+          top: calc(100% + 10px);
+          transform: translate(-50%, 0);
+          translate: 0 -6px;
+        }
+        .sg-tooltip.sg-tooltip-bottom::before {
+          content: '';
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-bottom-color: #334155;
+        }
+        .sg-tooltip.sg-tooltip-bottom::after {
+          content: '';
+          position: absolute;
+          bottom: calc(100% - 1px);
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-bottom-color: #1e293b;
         }
         .sg-flyout {
           position: absolute;
@@ -144,6 +168,7 @@ export function Sidebar() {
         
         return (
           <React.Fragment key={group.label}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: 2, marginBottom: 2, textAlign: 'center' }}>{group.label}</div>
             <div className="sg-tool-wrapper" style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
             <button
               className="sg-tool-btn"
@@ -205,7 +230,7 @@ export function Sidebar() {
                         }}>{t.label}</span>
                       </button>
                       
-                      <div className="sg-tooltip" style={{ left: '50%', top: 'calc(100% + 5px)', transform: 'translate(-50%, 0)', translate: '0 -6px' }}>
+                      <div className="sg-tooltip sg-tooltip-bottom">
                         <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 3 }}>{t.label}</div>
                         <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: t.shortcut ? 5 : 0 }}>{t.tooltip}</div>
                         {t.shortcut && (
@@ -223,7 +248,7 @@ export function Sidebar() {
                 })}
               </div>
             ) : (
-              <div className="sg-tooltip">
+              <div className="sg-tooltip sg-tooltip-right">
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 3 }}>{displayTool.label}</div>
                 <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: displayTool.shortcut ? 5 : 0 }}>{displayTool.tooltip}</div>
                 {displayTool.shortcut && (
