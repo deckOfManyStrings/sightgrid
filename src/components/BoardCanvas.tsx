@@ -775,7 +775,7 @@ export function BoardCanvas() {
   // WASD smooth pan
   useEffect(() => {
     const MAX_SPEED = 10;
-    const ACCEL = 0.8;
+    const ACCEL = 2.5;
     const FRICTION = 0.8;
 
     let vx = 0;
