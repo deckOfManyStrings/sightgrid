@@ -164,8 +164,8 @@ export const useStore = create<AppStore>()(
     // Terrain
     terrain: INITIAL_TERRAIN,
     addTerrain: (t) => {
-      get().pushHistory();
       set((s) => { s.terrain.push(t); });
+      get().pushHistory();
     },
     updateTerrain: (id, partial) =>
       set((s) => {
@@ -173,15 +173,15 @@ export const useStore = create<AppStore>()(
         if (i >= 0) Object.assign(s.terrain[i], partial);
       }),
     deleteTerrain: (id) => {
-      get().pushHistory();
       set((s) => { s.terrain = s.terrain.filter((t) => t.id !== id); });
+      get().pushHistory();
     },
 
     // Drawings
     drawings: [],
     addDrawing: (d) => {
-      get().pushHistory();
       set((s) => { s.drawings.push(d); });
+      get().pushHistory();
     },
     updateDrawing: (id, partial) =>
       set((s) => {
@@ -189,11 +189,10 @@ export const useStore = create<AppStore>()(
         if (i >= 0) Object.assign(s.drawings[i], partial);
       }),
     deleteDrawings: (ids) => {
-      get().pushHistory();
       set((s) => { s.drawings = s.drawings.filter((d) => !ids.includes(d.id)); });
+      get().pushHistory();
     },
     duplicateDrawings: (ids) => {
-      get().pushHistory();
       set((s) => {
         const toDup = s.drawings.filter((d) => ids.includes(d.id));
         toDup.forEach((d) => {
@@ -202,17 +201,18 @@ export const useStore = create<AppStore>()(
           s.drawings.push({ ...d, id: uuidv4(), points: newPoints });
         });
       });
+      get().pushHistory();
     },
 
     // Units
     units: INITIAL_UNITS,
     addUnit: (u) => {
-      get().pushHistory();
       set((s) => { s.units.push(u); });
+      get().pushHistory();
     },
     addUnitsBatch: (units) => {
-      get().pushHistory();
       set((s) => { units.forEach(u => s.units.push(u)); });
+      get().pushHistory();
     },
     updateUnit: (id, partial) =>
       set((s) => {
@@ -220,17 +220,17 @@ export const useStore = create<AppStore>()(
         if (i >= 0) Object.assign(s.units[i], partial);
       }),
     deleteUnits: (ids) => {
-      get().pushHistory();
       set((s) => { s.units = s.units.filter((u) => !ids.includes(u.id)); });
+      get().pushHistory();
     },
     duplicateUnits: (ids) => {
-      get().pushHistory();
       set((s) => {
         const toDup = s.units.filter((u) => ids.includes(u.id));
         toDup.forEach((u) => {
           s.units.push({ ...u, id: uuidv4(), x: u.x + 20, y: u.y + 20 });
         });
       });
+      get().pushHistory();
     },
 
     // Selection
@@ -265,7 +265,6 @@ export const useStore = create<AppStore>()(
       const { clipboardUnits, clipboardTerrain = [], clipboardDrawings = [] } = get();
       
       if (clipboardUnits.length === 0 && clipboardTerrain.length === 0 && clipboardDrawings.length === 0) return;
-      get().pushHistory();
       set((s) => {
         const newIds: string[] = [];
         
@@ -319,6 +318,7 @@ export const useStore = create<AppStore>()(
 
         s.selectedIds = newIds;
       });
+      get().pushHistory();
     },
 
     // Tool
@@ -362,8 +362,8 @@ export const useStore = create<AppStore>()(
       set((s) => { s.stageX = 0; s.stageY = 0; s.stageScale = 1; }),
 
     // History
-    history: [],
-    historyIndex: -1,
+    history: [{ terrain: JSON.parse(JSON.stringify(INITIAL_TERRAIN)), units: JSON.parse(JSON.stringify(INITIAL_UNITS)), drawings: [] }] as HistorySnapshot[],
+    historyIndex: 0,
     pushHistory: () => {
       const { terrain, units, drawings, history, historyIndex } = get();
       const snapshot: HistorySnapshot = {
@@ -460,7 +460,6 @@ export const useStore = create<AppStore>()(
       }
     },
     clearBoard: () => {
-      get().pushHistory();
       set((s) => {
         s.terrain = [];
         s.units = [];
@@ -468,9 +467,9 @@ export const useStore = create<AppStore>()(
         s.selectedIds = [];
         s.ruler = { active: false, startX: 0, startY: 0, endX: 0, endY: 0 };
       });
+      get().pushHistory();
     },
     loadTemplate: (template) => {
-      get().pushHistory();
       set((s) => {
         s.terrain = template.terrain() as any;
         s.units = [];
@@ -478,6 +477,7 @@ export const useStore = create<AppStore>()(
         s.selectedIds = [];
         s.ruler = { active: false, startX: 0, startY: 0, endX: 0, endY: 0 };
       });
+      get().pushHistory();
     },
   }))
 );

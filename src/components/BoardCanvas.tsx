@@ -1231,6 +1231,7 @@ export function BoardCanvas() {
         if (rotateTimeoutRef.current !== null) clearTimeout(rotateTimeoutRef.current);
         rotateTimeoutRef.current = setTimeout(() => {
           isRotatingRef.current = false;
+          useStore.getState().pushHistory();
         }, 300);
 
         return; // don't zoom
@@ -1285,6 +1286,7 @@ export function BoardCanvas() {
         if (rotateTimeoutRef.current !== null) clearTimeout(rotateTimeoutRef.current);
         rotateTimeoutRef.current = setTimeout(() => {
           isRotatingRef.current = false;
+          useStore.getState().pushHistory();
         }, 300);
 
         return; // don't zoom
