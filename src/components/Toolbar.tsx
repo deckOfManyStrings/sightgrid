@@ -132,7 +132,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
         fontSize: 14, fontWeight: 800, color: '#a5b4fc', marginRight: 8,
         letterSpacing: '-0.02em', whiteSpace: 'nowrap' as const,
       }}>
-        SightGrid
+        Firelane
       </div>
 
       {divider()}
@@ -223,7 +223,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
           href="https://buy.stripe.com/dRm5kF4yOcSdgOV4G30Fi00"
           target="_blank"
           rel="noreferrer"
-          title="Support SightGrid Development"
+          title="Support Firelane Development"
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)',

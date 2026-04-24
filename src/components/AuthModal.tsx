@@ -62,7 +62,7 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0', letterSpacing: '-0.02em' }}>
-              🎯 SightGrid
+              🎯 Firelane
             </div>
             <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
               Cloud saves for your scenarios
@@ -151,7 +151,7 @@ export function AuthModal({ onClose, onSuccess }: AuthModalProps) {
         </form>
 
         <p style={{ fontSize: 11, color: '#334155', textAlign: 'center', marginTop: 18, marginBottom: 0 }}>
-          You can use SightGrid without an account.<br />Sign in only to save scenarios to the cloud.
+          You can use Firelane without an account.<br />Sign in only to save scenarios to the cloud.
         </p>
       </div>
     </div>

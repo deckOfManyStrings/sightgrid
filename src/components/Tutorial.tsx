@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const TUTORIAL_KEY = 'sightgrid_tutorial_v2_done';
+const TUTORIAL_KEY = 'firelane_tutorial_v2_done';
 
 interface Step {
   title: string;

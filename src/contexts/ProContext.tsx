@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { supabase } from '../lib/supabase';
 
 /**
- * SightGrid Pro is a Stripe-billed subscription.
+ * Firelane Pro is a Stripe-billed subscription.
  * After payment, the user's Supabase auth metadata is updated with { plan: 'pro' }.
  * We also cache the status in localStorage so we don't wait for an auth round-trip on
  * repeat visits, and we re-read it whenever the auth session changes.
@@ -19,7 +19,7 @@ interface ProContextValue {
 
 const ProContext = createContext<ProContextValue | null>(null);
 
-const LS_KEY = 'sightgrid_pro_status';
+const LS_KEY = 'firelane_pro_status';
 
 import { ProModal } from '../components/ProModal';
 

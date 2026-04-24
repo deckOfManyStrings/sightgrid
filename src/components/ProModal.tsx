@@ -66,7 +66,7 @@ export function ProModal({ onClose }: ProModalProps) {
             fontSize: 24, fontWeight: 800, color: '#fcd34d', margin: 0,
             textShadow: '0 2px 10px rgba(234,179,8,0.3)',
           }}>
-            SightGrid Pro
+            Firelane Pro
           </h2>
           <p style={{ fontSize: 14, color: '#fde68a', opacity: 0.8, marginTop: 8, marginBottom: 0 }}>
             Unlock the full tactical experience.
@@ -95,7 +95,7 @@ export function ProModal({ onClose }: ProModalProps) {
             <span style={{ fontSize: 18, background: 'rgba(234,179,8,0.15)', borderRadius: '50%', padding: 4, lineHeight: 1 }}>💖</span>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>Support Development</div>
-              <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5 }}>Help us keep adding new features, tools, and enhancements to SightGrid.</div>
+              <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.5 }}>Help us keep adding new features, tools, and enhancements to Firelane.</div>
             </div>
           </div>
         </div>
