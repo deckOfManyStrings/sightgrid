@@ -774,12 +774,7 @@ export function BoardCanvas() {
 
   // WASD smooth pan
   useEffect(() => {
-    const MAX_SPEED = 10;
-    const ACCEL = 2.5;
-    const FRICTION = 0.8;
-
-    let vx = 0;
-    let vy = 0;
+    const SPEED = 10;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -799,35 +794,20 @@ export function BoardCanvas() {
     const startLoop = () => {
       const loop = () => {
         const keys = wasdKeys.current;
-        
-        let ax = 0, ay = 0;
-        if (keys.has('a')) ax += ACCEL;
-        if (keys.has('d')) ax -= ACCEL;
-        if (keys.has('w')) ay += ACCEL;
-        if (keys.has('s')) ay -= ACCEL;
-
-        vx += ax;
-        vy += ay;
-
-        if (ax === 0) vx *= FRICTION;
-        if (ay === 0) vy *= FRICTION;
-
-        if (vx > MAX_SPEED) vx = MAX_SPEED;
-        if (vx < -MAX_SPEED) vx = -MAX_SPEED;
-        if (vy > MAX_SPEED) vy = MAX_SPEED;
-        if (vy < -MAX_SPEED) vy = -MAX_SPEED;
-
-        // Stop loop only when completely physically arrested and no keys pressed
-        if (keys.size === 0 && Math.abs(vx) < 0.1 && Math.abs(vy) < 0.1) {
-          vx = 0;
-          vy = 0;
+        if (keys.size === 0) {
           rafId.current = null;
           return;
         }
 
-        if (Math.abs(vx) > 0.05 || Math.abs(vy) > 0.05) {
+        let dx = 0, dy = 0;
+        if (keys.has('a')) dx += SPEED;
+        if (keys.has('d')) dx -= SPEED;
+        if (keys.has('w')) dy += SPEED;
+        if (keys.has('s')) dy -= SPEED;
+
+        if (dx !== 0 || dy !== 0) {
           const { stageX: sx, stageY: sy, stageScale: sc, setViewport: sv } = useStore.getState();
-          sv(sx + vx, sy + vy, sc);
+          sv(sx + dx, sy + dy, sc);
         }
 
         rafId.current = requestAnimationFrame(loop);
