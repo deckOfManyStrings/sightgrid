@@ -475,6 +475,7 @@ function UnitLayer({ onUnitMouseDown, onUnitHover, onDragPrimaryChange, lastPrim
     lastPrimaryPosRef.current = null;
     onDragPrimaryChange(null);
     setDragInfo(null);
+    if (activeTool === 'select') onUnitHover(u.id);
   };
 
   return (
