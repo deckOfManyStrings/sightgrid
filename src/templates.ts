@@ -20,28 +20,21 @@ export interface ScenarioTemplate {
   savedCanvasWidth?: number;
 }
 
-function t(
-  shape: TerrainObject['shape'],
-  points: number[],
-  tags: TerrainObject['tags'] = ['blocks_los'],
-  color = '#6b7280',
-  opacity = 0.85,
-): TerrainObject {
-  return { id: uuidv4(), shape, points, tags, color, opacity, locked: false, layerId: 'terrain' };
-}
-
-// ─── Helper to build a centered rect from (cx, cy, w, h) ────────────────────
-function cr(cx: number, cy: number, w: number, h: number, tags?: TerrainObject['tags'], color?: string) {
-  const x0 = cx - w / 2, y0 = cy - h / 2;
-  const x1 = cx + w / 2, y1 = cy + h / 2;
-  return t('rect', [x0, y0, x1, y0, x1, y1, x0, y1], tags, color);
-}
-
 export const TEMPLATES: ScenarioTemplate[] = [
-  // ── 0. Citadel Gate (default real map) ──────────────────────────────────────
+  // ── 0. Empty Board ──────────────────────────────────────────────────────────
   {
-    id: 'citadel_gate',
-    name: 'Citadel Gate',
+    id: 'empty',
+    name: 'Empty Board',
+    emoji: '🟫',
+    subtitle: 'Blank slate — no terrain',
+    description: 'Clears everything and leaves you with a clean board to build from scratch.',
+    terrain: () => [],
+  },
+
+  // ── 1. Table 1 ──────────────────────────────────────────────────────────────
+  {
+    id: 'table_1',
+    name: 'Table 1',
     emoji: '🏰',
     subtitle: 'Pre-loaded map with terrain',
     description: 'A Warhammer 40K mission board with ruined terrain blocking key sightlines across a 44″×60″ board.',
@@ -79,113 +72,6 @@ export const TEMPLATES: ScenarioTemplate[] = [
     drawings: () => [
       { id: uuidv4(), color: '#ef4444', shape: 'polygon', locked: false, points: [1441.6442850171102,1.5035184645830715,-0.29462473427430447,989.5527511585987,-0.29462473427430447,0.0440661267780264], layerId: 'drawings', opacity: 1, strokeWidth: 4 } as DrawingObject,
       { id: uuidv4(), color: '#3b82f6', shape: 'polygon', locked: false, points: [2.8649844965051527,1969.1715333148054,1444.2408492115835,983.7410951932723,1446.0793388349446,1969.1715333148054], layerId: 'drawings', opacity: 1, strokeWidth: 4 } as DrawingObject,
-    ],
-  },
-
-  // ── 1. Empty Board ──────────────────────────────────────────────────────────
-  {
-    id: 'empty',
-    name: 'Empty Board',
-    emoji: '🟫',
-    subtitle: 'Blank slate — no terrain',
-    description: 'Clears everything and leaves you with a clean board to build from scratch.',
-    terrain: () => [],
-  },
-
-  // ── 2. Hammer & Anvil ───────────────────────────────────────────────────────
-  {
-    id: 'hammer_anvil',
-    name: 'Hammer & Anvil',
-    emoji: '⚒️',
-    subtitle: 'Standard 40K deployment',
-    description: 'Classic long-edge deployment with central ruins providing cover and line-of-sight blockers on both flanks.',
-    terrain: () => [
-      cr(450, 308, 90, 70),
-      cr(450, 308, 30, 30, ['decorative'], '#44403c'),
-      cr(180, 220, 100, 40),
-      cr(160, 420, 40, 120),
-      cr(720, 220, 100, 40),
-      cr(740, 420, 40, 120),
-      cr(300, 360, 60, 40),
-      cr(600, 360, 60, 40),
-    ],
-  },
-
-  // ── 3. Search & Destroy ─────────────────────────────────────────────────────
-  {
-    id: 'search_destroy',
-    name: 'Search & Destroy',
-    emoji: '🎯',
-    subtitle: 'Corner deployment',
-    description: 'Diagonal deployment with dense mid-board terrain creating choke points and ambush opportunities.',
-    terrain: () => [
-      cr(450, 308, 120, 80),
-      cr(250, 200, 80, 50),
-      cr(650, 420, 80, 50),
-      cr(350, 420, 50, 38),
-      cr(550, 200, 50, 38),
-      cr(180, 340, 38, 80),
-      cr(720, 280, 38, 80),
-    ],
-  },
-
-  // ── 4. Sweeping Engagement ──────────────────────────────────────────────────
-  {
-    id: 'sweeping',
-    name: 'Sweeping Engagement',
-    emoji: '🌊',
-    subtitle: 'Short-edge deployment',
-    description: 'Short-edge deployment with terrain walls that funnel armies into a central killing ground.',
-    terrain: () => [
-      t('line', [130, 180, 130, 440], ['blocks_los'], '#44403c'),
-      t('line', [200, 200, 200, 420], ['obscuring'], '#1e3a5f'),
-      t('line', [770, 180, 770, 440], ['blocks_los'], '#44403c'),
-      t('line', [700, 200, 700, 420], ['obscuring'], '#1e3a5f'),
-      cr(450, 210, 70, 45),
-      cr(450, 408, 70, 45),
-      cr(320, 308, 55, 55),
-      cr(580, 308, 55, 55),
-    ],
-  },
-
-  // ── 5. Dawn of War ──────────────────────────────────────────────────────────
-  {
-    id: 'dawn_of_war',
-    name: 'Dawn of War',
-    emoji: '🌄',
-    subtitle: 'Classic objective grab',
-    description: 'Troops begin on the board. Wide deployment zone with terrain spread evenly to reward movement.',
-    terrain: () => [
-      cr(200, 155, 100, 55),
-      cr(700, 155, 100, 55),
-      cr(200, 460, 100, 55),
-      cr(700, 460, 100, 55),
-      cr(450, 308, 80, 60),
-      t('line', [340, 230, 400, 280], ['blocks_los']),
-      t('line', [560, 230, 500, 280], ['blocks_los']),
-      t('line', [340, 390, 400, 340], ['blocks_los']),
-      t('line', [560, 390, 500, 340], ['blocks_los']),
-    ],
-  },
-
-  // ── 6. Close Quarters ───────────────────────────────────────────────────────
-  {
-    id: 'close_quarters',
-    name: 'Close Quarters',
-    emoji: '🏙️',
-    subtitle: 'Dense city-fight',
-    description: 'High-density urban terrain with narrow corridors. Short sightlines reward melee armies.',
-    terrain: () => [
-      cr(170, 175, 120, 90),
-      cr(450, 150, 90, 70),
-      cr(730, 175, 120, 90),
-      cr(170, 445, 120, 90),
-      cr(450, 465, 90, 70),
-      cr(730, 445, 120, 90),
-      cr(310, 308, 80, 130),
-      cr(590, 308, 80, 130),
-      t('line', [380, 175, 380, 440], ['blocks_los'], '#44403c'),
-      t('line', [520, 175, 520, 440], ['blocks_los'], '#44403c'),
     ],
   },
 ];
