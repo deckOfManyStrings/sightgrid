@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Stage, Layer, Line, Rect } from 'react-konva';
 import { useStore } from '../store';
-import { TEMPLATES, ScenarioTemplate } from '../templates';
+import { TEMPLATES } from '../templates';
+import type { ScenarioTemplate } from '../templates';
 
 interface TemplatesModalProps {
   onClose: () => void;
