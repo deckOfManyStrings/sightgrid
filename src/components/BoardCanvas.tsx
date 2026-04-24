@@ -196,9 +196,10 @@ function DrawingLayer() {
             stroke={isSelected ? '#a5f3fc' : d.color}
             strokeWidth={isSelected ? d.strokeWidth + 4 : d.strokeWidth}
             opacity={d.opacity}
-            tension={0.1} // reduced from 0.5 for sharper handwriting
-            lineCap="round"
-            lineJoin="round"
+            tension={d.shape === 'freehand' ? 0.1 : 0}
+            closed={d.shape === 'rect' || d.shape === 'polygon'}
+            lineCap={d.shape === 'freehand' ? "round" : "butt"}
+            lineJoin={d.shape === 'freehand' ? "round" : "miter"}
             hitStrokeWidth={Math.max(15, d.strokeWidth + 5)}
             draggable={activeTool === 'select' && !objectsLocked}
             onPointerDown={erase}
@@ -676,6 +677,7 @@ export function BoardCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const selBoxStart = useRef<{ x: number; y: number } | null>(null);
+  const drawColor = useStore(s => s.drawColor);
   // WASD pan state
   const wasdKeys = useRef<Set<string>>(new Set());
   const rafId = useRef<number | null>(null);
@@ -911,8 +913,8 @@ export function BoardCanvas() {
       return;
     }
 
-    // Terrain rect start
-    if (activeTool === 'terrain_rect') {
+    // Terrain OR Draw rect start
+    if (activeTool === 'terrain_rect' || activeTool === 'draw_rect') {
       setDrawState({ drawing: true, points: [pos.x, pos.y], previewPoint: pos });
       return;
     }
@@ -923,24 +925,31 @@ export function BoardCanvas() {
       return;
     }
 
-    // Terrain line start
-    if (activeTool === 'terrain_line') {
+    // Terrain OR Draw line start
+    if (activeTool === 'terrain_line' || activeTool === 'draw_line') {
       if (!drawState.drawing) {
         setDrawState({ drawing: true, points: [pos.x, pos.y], previewPoint: pos });
       } else {
         // Add another point (single-click finalization)
         const newPoints = [...drawState.points, pos.x, pos.y];
-        addTerrain({
-          id: uuidv4(), shape: 'line', points: newPoints,
-          tags: ['blocks_los'], color: '#6b7280', opacity: 0.9, locked: false, layerId: 'terrain',
-        });
+        if (activeTool === 'terrain_line') {
+          addTerrain({
+            id: uuidv4(), shape: 'line', points: newPoints,
+            tags: ['blocks_los'], color: '#6b7280', opacity: 0.9, locked: false, layerId: 'terrain',
+          });
+        } else {
+          useStore.getState().addDrawing({
+            id: uuidv4(), shape: 'line', points: newPoints,
+            color: useStore.getState().drawColor, strokeWidth: 4, opacity: 1, locked: false, layerId: 'drawings',
+          });
+        }
         setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
       }
       return;
     }
 
-    // Terrain polygon
-    if (activeTool === 'terrain_polygon') {
+    // Terrain OR Draw polygon
+    if (activeTool === 'terrain_polygon' || activeTool === 'draw_polygon') {
       if (!isPolyDrawing.current) {
         // Start a new polygon
         isPolyDrawing.current = true;
@@ -955,10 +964,17 @@ export function BoardCanvas() {
           const dy = pos.y - pts[1];
           if (Math.sqrt(dx * dx + dy * dy) < CLOSE_THRESH) {
             // Close: commit the polygon with existing points (don't add the click as a new vertex)
-            addTerrain({
-              id: uuidv4(), shape: 'polygon', points: [...pts],
-              tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
-            });
+            if (activeTool === 'terrain_polygon') {
+              addTerrain({
+                id: uuidv4(), shape: 'polygon', points: [...pts],
+                tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
+              });
+            } else {
+              useStore.getState().addDrawing({
+                id: uuidv4(), shape: 'polygon', points: [...pts],
+                color: useStore.getState().drawColor, strokeWidth: 4, opacity: 1, locked: false, layerId: 'drawings',
+              });
+            }
             polyPointsRef.current = [];
             setPolyCloseSnap(false);
             setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
@@ -994,7 +1010,7 @@ export function BoardCanvas() {
     }
 
     // Terrain rect preview
-    if (activeTool === 'terrain_rect' && drawState.drawing) {
+    if ((activeTool === 'terrain_rect' || activeTool === 'draw_rect') && drawState.drawing) {
       const [sx, sy] = drawState.points;
       const pts = [sx, sy, pos.x, sy, pos.x, pos.y, sx, pos.y];
       setDrawState(prev => ({ ...prev, points: pts, previewPoint: pos }));
@@ -1008,12 +1024,12 @@ export function BoardCanvas() {
     }
 
     // Terrain line/polygon preview
-    if ((activeTool === 'terrain_line' || activeTool === 'terrain_polygon') && drawState.drawing) {
+    if ((activeTool === 'terrain_line' || activeTool === 'terrain_polygon' || activeTool === 'draw_line' || activeTool === 'draw_polygon') && drawState.drawing) {
       setDrawState(prev => ({ ...prev, previewPoint: pos }));
     }
 
     // Update close-snap indicator for polygon
-    if (activeTool === 'terrain_polygon' && isPolyDrawing.current) {
+    if ((activeTool === 'terrain_polygon' || activeTool === 'draw_polygon') && isPolyDrawing.current) {
       const pts = polyPointsRef.current;
       if (pts.length >= 6) {
         const CLOSE_THRESH = 15 / stageScale;
@@ -1045,16 +1061,23 @@ export function BoardCanvas() {
       return;
     }
 
-    // Terrain rect finalize
-    if (activeTool === 'terrain_rect' && drawState.drawing) {
+    // Terrain OR Draw rect finalize
+    if ((activeTool === 'terrain_rect' || activeTool === 'draw_rect') && drawState.drawing) {
       const startX = drawState.points[0];
       const startY = drawState.points[1];
       const pts = [startX, startY, pos.x, startY, pos.x, pos.y, startX, pos.y];
       if (Math.abs(pos.x - startX) > 5 && Math.abs(pos.y - startY) > 5) {
-        addTerrain({
-          id: uuidv4(), shape: 'rect', points: pts,
-          tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
-        });
+        if (activeTool === 'terrain_rect') {
+          addTerrain({
+            id: uuidv4(), shape: 'rect', points: pts,
+            tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
+          });
+        } else {
+          useStore.getState().addDrawing({
+            id: uuidv4(), shape: 'rect', points: pts,
+            color: useStore.getState().drawColor, strokeWidth: 4, opacity: 1, locked: false, layerId: 'drawings',
+          });
+        }
       }
       setDrawState({ drawing: false, points: [], previewPoint: { x: 0, y: 0 } });
       return;
@@ -1065,10 +1088,11 @@ export function BoardCanvas() {
       if (drawState.points.length > 4) { // Needs at least 2 x,y pairs + 1 point
         useStore.getState().addDrawing({
           id: uuidv4(),
+          shape: 'freehand',
           points: drawState.points,
-          color: '#e4e4e7',
+          color: useStore.getState().drawColor,
           strokeWidth: 4,
-          opacity: 0.5,
+          opacity: 1,
           locked: false,
           layerId: 'drawings',
         });
@@ -1113,10 +1137,17 @@ export function BoardCanvas() {
         e.preventDefault();
         const pts = polyPointsRef.current;
         if (pts.length >= 6) {
-          addTerrain({
-            id: uuidv4(), shape: 'polygon', points: [...pts],
-            tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
-          });
+          if (activeTool === 'terrain_polygon') {
+            addTerrain({
+              id: uuidv4(), shape: 'polygon', points: [...pts],
+              tags: ['blocks_los'], color: '#6b7280', opacity: 0.85, locked: false, layerId: 'terrain',
+            });
+          } else {
+            useStore.getState().addDrawing({
+              id: uuidv4(), shape: 'polygon', points: [...pts],
+              color: useStore.getState().drawColor, strokeWidth: 4, opacity: 1, locked: false, layerId: 'drawings',
+            });
+          }
         }
         polyPointsRef.current = [];
         setPolyCloseSnap(false);
@@ -1133,7 +1164,7 @@ export function BoardCanvas() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [addTerrain]);
+  }, [addTerrain, activeTool]);
 
   // Release unit/terrain hold on global mouseup
   useEffect(() => {
@@ -1341,19 +1372,25 @@ export function BoardCanvas() {
         {/* Drawing preview */}
         {drawState.drawing && (
           <Layer>
-            {activeTool === 'terrain_rect' && drawState.points.length >= 8 && (
+            {(activeTool === 'terrain_rect' || activeTool === 'draw_rect') && drawState.points.length >= 8 && (
               <Line
                 points={drawState.points} closed
-                fill="rgba(107,114,128,0.3)" stroke="#a5f3fc"
-                strokeWidth={1.5} dash={[5, 3]}
+                fill={activeTool === 'terrain_rect' ? "rgba(107,114,128,0.3)" : undefined} 
+                stroke={activeTool === 'terrain_rect' ? "#a5f3fc" : drawColor}
+                strokeWidth={activeTool === 'terrain_rect' ? 1.5 : 4} 
+                dash={activeTool === 'terrain_rect' ? [5, 3] : undefined}
+                tension={0} lineCap="butt" lineJoin="miter"
               />
             )}
-            {activeTool === 'terrain_polygon' && drawState.points.length >= 2 && (
+            {(activeTool === 'terrain_polygon' || activeTool === 'draw_polygon') && drawState.points.length >= 2 && (
               <>
                 <Line
                   points={[...drawState.points, drawState.previewPoint.x, drawState.previewPoint.y]}
                   closed={false}
-                  stroke="#a5f3fc" strokeWidth={1.5} dash={[5, 3]}
+                  stroke={activeTool === 'terrain_polygon' ? "#a5f3fc" : drawColor}
+                  strokeWidth={activeTool === 'terrain_polygon' ? 1.5 : 4} 
+                  dash={activeTool === 'terrain_polygon' ? [5, 3] : undefined}
+                  tension={0} lineCap="butt" lineJoin="miter"
                 />
                 {Array.from({ length: drawState.points.length / 2 }).map((_, i) => {
                   const isFirst = i === 0;
@@ -1362,7 +1399,7 @@ export function BoardCanvas() {
                     <Circle key={i}
                       x={drawState.points[i * 2]} y={drawState.points[i * 2 + 1]}
                       radius={isFirst && canClose ? (polyCloseSnap ? 9 : 6) : 4}
-                      fill={isFirst && canClose ? (polyCloseSnap ? '#22c55e' : '#86efac') : '#a5f3fc'}
+                      fill={isFirst && canClose ? (polyCloseSnap ? '#22c55e' : '#86efac') : (activeTool === 'terrain_polygon' ? '#a5f3fc' : drawColor)}
                       stroke={isFirst && canClose ? '#16a34a' : undefined}
                       strokeWidth={isFirst && canClose ? 2 : 0}
                     />
@@ -1370,17 +1407,20 @@ export function BoardCanvas() {
                 })}
               </>
             )}
-            {activeTool === 'terrain_line' && drawState.points.length >= 2 && (
+            {(activeTool === 'terrain_line' || activeTool === 'draw_line') && drawState.points.length >= 2 && (
               <Line
                 points={[drawState.points[0], drawState.points[1], drawState.previewPoint.x, drawState.previewPoint.y]}
-                stroke="#a5f3fc" strokeWidth={2} dash={[5, 3]}
+                stroke={activeTool === 'terrain_line' ? "#a5f3fc" : drawColor}
+                strokeWidth={activeTool === 'terrain_line' ? 2 : 4} 
+                dash={activeTool === 'terrain_line' ? [5, 3] : undefined}
+                tension={0} lineCap="butt" lineJoin="miter"
               />
             )}
             {activeTool === 'draw' && drawState.drawing && (
               <Line
                 points={drawState.points}
-                stroke="#e4e4e7" strokeWidth={4} tension={0.1}
-                lineCap="round" lineJoin="round" opacity={0.5}
+                stroke={drawColor} strokeWidth={4} tension={0.1}
+                lineCap="round" lineJoin="round" opacity={1}
               />
             )}
           </Layer>
@@ -1419,7 +1459,11 @@ function getCursor(tool: string): string {
     case 'place_unit': return 'crosshair';
     case 'terrain_line':
     case 'terrain_rect':
-    case 'terrain_polygon': return 'crosshair';
+    case 'terrain_polygon':
+    case 'draw_line':
+    case 'draw_rect':
+    case 'draw_polygon':
+    case 'draw': return 'crosshair';
     case 'ruler': return 'crosshair';
     case 'eraser': return 'cell';
     default: return 'default';

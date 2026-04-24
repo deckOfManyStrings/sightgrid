@@ -30,6 +30,7 @@ export function Inspector() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplateColorPicker, setShowTemplateColorPicker] = useState(false);
   const [showGroupColorPicker, setShowGroupColorPicker] = useState(false);
+  const [showDrawColorPicker, setShowDrawColorPicker] = useState(false);
   const [groupRange, setGroupRange] = useState<string>('24');
   const [editingMapScaleX, setEditingMapScaleX] = useState(false);
   const [editingMapScaleY, setEditingMapScaleY] = useState(false);
@@ -375,6 +376,36 @@ export function Inspector() {
             />
           </div>
 
+        </>
+      ))}
+
+      {/* Drawing Template (when draw tool active) */}
+      {['draw', 'draw_line', 'draw_rect', 'draw_polygon'].includes(activeTool) && section('Drawing Tool', (
+        <>
+          {label('Color')}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            {UNIT_COLORS.map(c => (
+              <div key={c} onClick={() => useStore.getState().setDrawColor(c)}
+                style={{
+                  width: 20, height: 20, borderRadius: 4, background: c, cursor: 'pointer',
+                  border: useStore.getState().drawColor === c ? '2px solid white' : '2px solid transparent',
+                }} />
+            ))}
+          </div>
+          <div onClick={() => setShowDrawColorPicker(!showDrawColorPicker)}
+            style={{
+              width: '100%', height: 28, borderRadius: 6, background: useStore.getState().drawColor,
+              cursor: 'pointer', marginBottom: 8, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 11, color: 'rgba(255,255,255,0.8)',
+              border: '1px solid #334155',
+            }}>
+            Custom Color
+          </div>
+          {showDrawColorPicker && (
+            <div style={{ marginBottom: 8 }}>
+              <HexColorPicker color={useStore.getState().drawColor} onChange={c => useStore.getState().setDrawColor(c)} />
+            </div>
+          )}
         </>
       ))}
 

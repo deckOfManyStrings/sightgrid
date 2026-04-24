@@ -37,6 +37,8 @@ export interface AppStore {
   duplicateUnits: (ids: string[]) => void;
 
   // Drawings
+  drawColor: string;
+  setDrawColor: (c: string) => void;
   drawings: DrawingObject[];
   addDrawing: (d: DrawingObject) => void;
   updateDrawing: (id: string, partial: Partial<DrawingObject>) => void;
@@ -178,6 +180,8 @@ export const useStore = create<AppStore>()(
     },
 
     // Drawings
+    drawColor: '#e4e4e7',
+    setDrawColor: (c) => set((s) => { s.drawColor = c; }),
     drawings: [],
     addDrawing: (d) => {
       set((s) => { s.drawings.push(d); });

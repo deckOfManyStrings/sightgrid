@@ -10,6 +10,9 @@ export type ActiveTool =
   | 'ruler'
   | 'movement_radius'
   | 'draw'
+  | 'draw_line'
+  | 'draw_rect'
+  | 'draw_polygon'
   | 'eraser';
 
 export type LayerName = 'units' | 'terrain' | 'drawings';
@@ -59,8 +62,11 @@ export interface UnitToken {
 }
 
 // Drawings
+export type DrawingShape = 'freehand' | 'line' | 'rect' | 'polygon';
+
 export interface DrawingObject {
   id: string;
+  shape: DrawingShape;
   points: number[];
   color: string;
   strokeWidth: number;
