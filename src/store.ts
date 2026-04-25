@@ -8,7 +8,7 @@ import type {
 } from './types';
 import type { ScenarioTemplate } from './templates';
 import {
-  DEFAULT_BOARD_WIDTH_INCHES, DEFAULT_BOARD_HEIGHT_INCHES, MAX_HISTORY_SIZE
+  DEFAULT_BOARD_WIDTH_INCHES, DEFAULT_BOARD_HEIGHT_INCHES, MAX_HISTORY_SIZE, REFERENCE_CANVAS_WIDTH
 } from './constants';
 
 // Full App State
@@ -436,15 +436,14 @@ export const useStore = create<AppStore>()(
 
     // Persistence
     exportJSON: () => {
-      const { board, terrain, units, drawings, objectsVisible, objectsLocked, canvasWidth } = get();
-      return JSON.stringify({ board, terrain, units, drawings, objectsVisible, objectsLocked, savedCanvasWidth: canvasWidth }, null, 2);
+      const { board, terrain, units, drawings, objectsVisible, objectsLocked } = get();
+      return JSON.stringify({ board, terrain, units, drawings, objectsVisible, objectsLocked, savedCanvasWidth: REFERENCE_CANVAS_WIDTH }, null, 2);
     },
     importJSON: (json) => {
       try {
         const data = JSON.parse(json);
-        const currentCanvasWidth = get().canvasWidth;
         const ratio = data.savedCanvasWidth && data.savedCanvasWidth > 0
-          ? currentCanvasWidth / data.savedCanvasWidth
+          ? REFERENCE_CANVAS_WIDTH / data.savedCanvasWidth
           : 1;
 
         set((s) => {
@@ -502,9 +501,8 @@ export const useStore = create<AppStore>()(
       get().pushHistory();
     },
     loadTemplate: (template) => {
-      const currentCanvasWidth = get().canvasWidth;
       const ratio = template.savedCanvasWidth && template.savedCanvasWidth > 0
-        ? currentCanvasWidth / template.savedCanvasWidth
+        ? REFERENCE_CANVAS_WIDTH / template.savedCanvasWidth
         : 1;
 
       set((s) => {

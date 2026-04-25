@@ -2,23 +2,23 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Line, Rect, Circle, Ellipse, Arrow, Text, Group } from 'react-konva';
 import Konva from 'konva';
 import { useStore, getPixelsPerInch, mmToPx as mmToPxUtil, pxToInches as pxToInchesUtil } from '../store';
+import { REFERENCE_CANVAS_WIDTH } from '../constants';
 import type { TerrainObject, UnitToken, LayerName } from '../types';
 import { buildLosPolygon, dist, pointInPolygon } from '../utils/geometry';
 import { v4 as uuidv4 } from 'uuid';
 
 // ─── Grid Layer ──────────────────────────────────────────────────────────────
 function GridLayer() {
-  const canvasWidth = useStore(s => s.canvasWidth);
   const board = useStore(s => s.board);
   const gridVisible = useStore(s => s.layers.grid);
 
   if (!gridVisible) return null;
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
-  const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
+  const boardHeightPx = (board.heightInches / board.widthInches) * REFERENCE_CANVAS_WIDTH;
   const op = board.gridOpacity ?? 0.3;
   const lines: React.ReactElement[] = [];
 
-  for (let x = 0; x <= canvasWidth; x += ppi) {
+  for (let x = 0; x <= REFERENCE_CANVAS_WIDTH; x += ppi) {
     const isMajor = Math.round(x / ppi) % 6 === 0;
     lines.push(
       <Line key={`vx${x}`} points={[x, 0, x, boardHeightPx]}
@@ -35,7 +35,7 @@ function GridLayer() {
   for (let y = 0; y <= boardHeightPx; y += ppi) {
     const isMajor = Math.round(y / ppi) % 6 === 0;
     lines.push(
-      <Line key={`hy${y}`} points={[0, y, canvasWidth, y]}
+      <Line key={`hy${y}`} points={[0, y, REFERENCE_CANVAS_WIDTH, y]}
         stroke={isMajor ? `rgba(255,255,255,${Math.min(op * 1.4, 1)})` : `rgba(255,255,255,${op * 0.5})`}
         strokeWidth={isMajor ? 1.5 : 0.5} listening={false} />,
     );
@@ -240,13 +240,12 @@ function LosLayer() {
   const terrain = useStore(s => s.terrain);
   const losVisible = useStore(s => s.layers.los);
   const selectedIds = useStore(s => s.selectedIds);
-  const canvasWidth = useStore(s => s.canvasWidth);
   const board = useStore(s => s.board);
 
   if (!losVisible) return null;
 
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
-  const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
+  const boardHeightPx = (board.heightInches / board.widthInches) * REFERENCE_CANVAS_WIDTH;
   const losUnits = units.filter(u => u.losEnabled && selectedIds.includes(u.id));
   if (losUnits.length === 0) return null;
 
@@ -255,7 +254,7 @@ function LosLayer() {
   return (
     <Group
       clipX={0} clipY={0}
-      clipWidth={canvasWidth} clipHeight={boardHeightPx}
+      clipWidth={REFERENCE_CANVAS_WIDTH} clipHeight={boardHeightPx}
     >
       {losUnits.map(u => {
         const poly = buildLosPolygon(u.x, u.y, u.rangeInches, ppi, blockers, 360);
@@ -320,7 +319,6 @@ function LosLayer() {
 function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
   const units = useStore(s => s.units);
   const terrain = useStore(s => s.terrain);
-  const canvasWidth = useStore(s => s.canvasWidth);
   const board = useStore(s => s.board);
 
   if (!hoveredUnitId) return null;
@@ -329,15 +327,15 @@ function HoverLosLayer({ hoveredUnitId }: { hoveredUnitId: string | null }) {
   // Skip if no unit found, or if the persistent LoS toggle is already on
   if (!unit || unit.losEnabled) return null;
 
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
-  const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
+  const boardHeightPx = (board.heightInches / board.widthInches) * REFERENCE_CANVAS_WIDTH;
   const blockers = terrain.filter(t => t.tags.includes('blocks_los'));
 
   // 360 rays (1° resolution) to accurately wrap around terrain corners
   const poly = buildLosPolygon(unit.x, unit.y, unit.rangeInches, ppi, blockers, 360);
 
   return (
-    <Group clipX={0} clipY={0} clipWidth={canvasWidth} clipHeight={boardHeightPx}>
+    <Group clipX={0} clipY={0} clipWidth={REFERENCE_CANVAS_WIDTH} clipHeight={boardHeightPx}>
       {/* Ghost LoS polygon — blue-purple preview tint */}
       <Line
         points={poly}
@@ -411,7 +409,6 @@ function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange,
   const unitsVisible = useStore(s => s.layers.units);
   const selectedIds = useStore(s => s.selectedIds);
   const activeTool = useStore(s => s.activeTool);
-  const canvasWidth = useStore(s => s.canvasWidth);
   const board = useStore(s => s.board);
   const updateUnit = useStore(s => s.updateUnit);
   const toggleSelection = useStore(s => s.toggleSelection);
@@ -433,7 +430,7 @@ function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange,
 
   if (!objectsVisible) return null;
 
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
 
   const handleDragStart = (u: UnitToken) => {
     if (objectsLocked) return;
@@ -619,11 +616,10 @@ function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange,
 function MeasurementLayer() {
   const ruler = useStore(s => s.ruler);
   const measureVisible = useStore(s => s.layers.measurement);
-  const canvasWidth = useStore(s => s.canvasWidth);
   const board = useStore(s => s.board);
 
   if (!measureVisible || !ruler.active) return null;
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
   const d = dist(ruler.startX, ruler.startY, ruler.endX, ruler.endY);
   const inches = pxToInchesUtil(d, ppi).toFixed(2);
   const mx = (ruler.startX + ruler.endX) / 2;
@@ -649,7 +645,6 @@ function MeasurementLayer() {
 function MapImageLayer() {
   const board = useStore(s => s.board);
   const setBoard = useStore(s => s.setBoard);
-  const canvasWidth = useStore(s => s.canvasWidth);
   const mapVisible = useStore(s => s.layers.map);
   const activeTool = useStore(s => s.activeTool);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
@@ -662,10 +657,10 @@ function MapImageLayer() {
   }, [board.mapImageUrl]);
 
   if (!mapVisible || !img) return null;
-  const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
+  const refBoardHeight = (board.heightInches / board.widthInches) * REFERENCE_CANVAS_WIDTH;
   const isAdjusting = activeTool === 'map_adjust';
-  const mapW = canvasWidth * (board.mapScaleX ?? 1);
-  const mapH = boardHeightPx * (board.mapScaleY ?? 1);
+  const mapW = REFERENCE_CANVAS_WIDTH * (board.mapScaleX ?? 1);
+  const mapH = refBoardHeight * (board.mapScaleY ?? 1);
 
   return (
     <Layer>
@@ -718,6 +713,8 @@ export function BoardCanvas() {
   // Tracks primary's last known Konva position for incremental drag-move deltas.
   // Lifted here so handleWheel can update it after orbit moves the primary.
   const lastPrimaryPosRef = useRef<{ x: number; y: number } | null>(null);
+  // Holds baseScale so handleWheel (useCallback) can read it without stale closure
+  const baseScaleRef = useRef(1);
 
   const activeTool = useStore(s => s.activeTool);
   const canvasWidth = useStore(s => s.canvasWidth);
@@ -775,15 +772,14 @@ export function BoardCanvas() {
         if (stage) {
           const pos = stage.getPointerPosition();
           if (pos) {
-            const { stageX, stageY, stageScale } = useStore.getState();
             centerPos = {
-              x: (pos.x - stageX) / stageScale,
-              y: (pos.y - stageY) / stageScale,
+              x: (pos.x - stage.x()) / stage.scaleX(),
+              y: (pos.y - stage.y()) / stage.scaleY(),
             };
             // optional: snap to grid if enabled
-            const { snapEnabled, board, canvasWidth } = useStore.getState();
+            const { snapEnabled, board: b } = useStore.getState();
             if (snapEnabled) {
-              const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+              const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, b.widthInches);
               centerPos.x = Math.round(centerPos.x / ppi) * ppi;
               centerPos.y = Math.round(centerPos.y / ppi) * ppi;
             }
@@ -848,7 +844,10 @@ export function BoardCanvas() {
     };
   }, []);
 
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
+  // baseScale maps reference coordinate space → screen pixels
+  const baseScale = canvasWidth / REFERENCE_CANVAS_WIDTH;
+  baseScaleRef.current = baseScale;
 
   const snapVal = useCallback((v: number) => {
     if (!snapEnabled) return v;
@@ -860,11 +859,12 @@ export function BoardCanvas() {
     if (!stage) return { x: 0, y: 0 };
     const pos = stage.getPointerPosition();
     if (!pos) return { x: 0, y: 0 };
+    // Use stage's own transform so we always get the combined scale (baseScale × userZoom)
     return {
-      x: snapVal((pos.x - stageX) / stageScale),
-      y: snapVal((pos.y - stageY) / stageScale),
+      x: snapVal((pos.x - stage.x()) / stage.scaleX()),
+      y: snapVal((pos.y - stage.y()) / stage.scaleY()),
     };
-  }, [stageX, stageY, stageScale, snapVal]);
+  }, [snapVal]);
 
   const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     const pos = getRelPos(e);
@@ -1366,28 +1366,29 @@ export function BoardCanvas() {
       return;
     }
 
-    // Normal zoom
+    // Normal zoom — keep stored stageScale as user-zoom only; Stage.scaleX = baseScale × stageScale
     const stage = stageRef.current;
     if (!stage) return;
     const scaleBy = 1.08;
-    const oldScale = stage.scaleX();
+    const oldCombined = stage.scaleX(); // = baseScale × userZoom (the actual Konva scale)
     const pointer = stage.getPointerPosition();
     if (!pointer) return;
     const mousePointTo = {
-      x: (pointer.x - stage.x()) / oldScale,
-      y: (pointer.y - stage.y()) / oldScale,
+      x: (pointer.x - stage.x()) / oldCombined,
+      y: (pointer.y - stage.y()) / oldCombined,
     };
-    const newScale = e.evt.deltaY < 0
-      ? Math.min(oldScale * scaleBy, 8)
-      : Math.max(oldScale / scaleBy, 0.2);
+    const newCombined = e.evt.deltaY < 0
+      ? Math.min(oldCombined * scaleBy, 8)
+      : Math.max(oldCombined / scaleBy, 0.2);
     const newPos = {
-      x: pointer.x - mousePointTo.x * newScale,
-      y: pointer.y - mousePointTo.y * newScale,
+      x: pointer.x - mousePointTo.x * newCombined,
+      y: pointer.y - mousePointTo.y * newCombined,
     };
-    setViewport(newPos.x, newPos.y, newScale);
+    // Divide out baseScale so stageScale stores user zoom only (1.0 = fit-to-width)
+    setViewport(newPos.x, newPos.y, newCombined / baseScaleRef.current);
   }, [setViewport]);
 
-  const boardHeightPx = (board.heightInches / board.widthInches) * canvasWidth;
+  const boardHeightPx = (board.heightInches / board.widthInches) * REFERENCE_CANVAS_WIDTH;
   const stageWidth = containerRef.current?.clientWidth || 900;
   const stageHeight = containerRef.current?.clientHeight || 700;
 
@@ -1397,7 +1398,7 @@ export function BoardCanvas() {
         ref={stageRef}
         width={stageWidth}
         height={stageHeight}
-        x={stageX} y={stageY} scaleX={stageScale} scaleY={stageScale}
+        x={stageX} y={stageY} scaleX={baseScale * stageScale} scaleY={baseScale * stageScale}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -1405,7 +1406,7 @@ export function BoardCanvas() {
       >
         {/* Board background */}
         <Layer>
-          <Rect x={0} y={0} width={canvasWidth} height={boardHeightPx}
+          <Rect x={0} y={0} width={REFERENCE_CANVAS_WIDTH} height={boardHeightPx}
             fill="#1e293b" stroke="rgba(99,102,241,0.6)" strokeWidth={2} />
         </Layer>
 
@@ -1504,7 +1505,7 @@ export function BoardCanvas() {
         position: 'absolute', bottom: 8, left: 8,
         fontSize: 10, color: '#334155', pointerEvents: 'none',
       }}>
-        {Math.round(canvasWidth / ppi * 10) / 10}" × {Math.round((boardHeightPx / ppi) * 10) / 10}" board
+        {board.widthInches}" × {board.heightInches}" board
       </div>
     </div>
   );

@@ -57,3 +57,10 @@ export const MAX_HISTORY_SIZE = 50;
 //  LoS Ray Config 
 export const LOS_RAY_COUNT = 360; // one ray per degree
 export const LOS_MAX_RANGE_PX_MULTIPLIER = 10000; // effectively infinite if no range set
+
+// ─── Fixed coordinate reference width ────────────────────────────────────────
+// All canvas-space coordinates (unit x/y, terrain points) are stored at this
+// reference width. The Konva Stage applies baseScale = canvasWidth / REFERENCE_CANVAS_WIDTH
+// so that everything scales proportionally with the viewport. This prevents unit
+// sizes and positions jumping when the browser window is resized.
+export const REFERENCE_CANVAS_WIDTH = 900;
