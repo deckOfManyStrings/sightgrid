@@ -135,6 +135,47 @@ export function Inspector() {
     }
   }
 
+  function arrangeInCols(numCols: number) {
+    const sel = units.filter(uu => selectedIds.includes(uu.id));
+    if (sel.length === 0) return;
+
+    const gap = 0; // bases touch edge-to-edge, no gap
+
+    // Sort top-to-bottom by current position
+    const sorted = [...sel].sort((a, b) => a.y - b.y);
+    const perCol = Math.ceil(sorted.length / numCols);
+
+    // Anchor to top-left of first unit
+    const firstW = mmToPxUtil(sorted[0].baseWidthMm, ppi);
+    const firstH = mmToPxUtil(sorted[0].baseHeightMm, ppi);
+    const anchorLeft = sorted[0].x - firstW / 2;
+    const anchorTop  = sorted[0].y - firstH / 2;
+
+    let currentX = anchorLeft;
+
+    for (let col = 0; col < numCols; col++) {
+      const colUnits = sorted.slice(col * perCol, (col + 1) * perCol);
+      if (colUnits.length === 0) break;
+
+      // Width of this column = widest unit in it
+      const colW = Math.max(...colUnits.map(u => mmToPxUtil(u.baseWidthMm, ppi)));
+
+      let currentY = anchorTop;
+      colUnits.forEach(unit => {
+        const w = mmToPxUtil(unit.baseWidthMm, ppi);
+        const h = mmToPxUtil(unit.baseHeightMm, ppi);
+        // Horizontally center within the column width
+        updateUnit(unit.id, {
+          x: currentX + colW / 2,
+          y: currentY + h / 2,
+        });
+        currentY += h + gap; // advance by this unit's actual height
+      });
+
+      currentX += colW + gap; // advance by this column's actual width
+    }
+  }
+
   // ── Shared UI helpers ────────────────────────────────────────────────────────
 
   const section = (title: string, content: React.ReactNode) => (
@@ -715,10 +756,14 @@ export function Inspector() {
           )}
 
           {/* ── Group: Formation ── */}
-          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, marginTop: 4 }}>Formation</div>
+          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, marginTop: 4 }}>Rows</div>
           {btn('▬ 1 Row', () => arrangeInRows(1))}
           {btn('▬▬ 2 Rows', () => arrangeInRows(2))}
           {btn('▬▬▬ 3 Rows', () => arrangeInRows(3))}
+          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, marginTop: 8 }}>Columns</div>
+          {btn('▮ 1 Col', () => arrangeInCols(1))}
+          {btn('▮▮ 2 Cols', () => arrangeInCols(2))}
+          {btn('▮▮▮ 3 Cols', () => arrangeInCols(3))}
           <div style={{ marginTop: 8 }}>
             {btn('⧉ Duplicate', () => duplicateUnits(selectedIds), 'primary')}
             {btn('🗑 Delete Selected', deleteSelected, 'danger')}
