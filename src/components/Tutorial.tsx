@@ -10,12 +10,13 @@ interface Step {
   cardFixed: React.CSSProperties;
   /** Highlight ring around the target element */
   highlight: {
-    top: number;
-    width: number;
-    height: number;
-    borderRadius?: number;
-    left?: number;
-    right?: number;
+    top: number | string;
+    width: number | string;
+    height: number | string;
+    borderRadius?: number | string;
+    left?: number | string;
+    right?: number | string;
+    transform?: string;
   };
   /** Which side the arrow caret points FROM — 'none' for centred cards with no caret */
   arrow: 'left' | 'right' | 'none';
@@ -33,7 +34,12 @@ const STEPS: Step[] = [
     title: '🗺️ Navigating the Board',
     body: 'Learn how to move around before diving in:',
     cardFixed: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
-    highlight: { top: 56, left: 68, width: 900, height: 600, borderRadius: 12 },
+    // Perfectly frame the BoardCanvas workspace:
+    // Left: 64px sidebar + 1px border + 8px padding = 73px
+    // Top: 48px toolbar + 8px padding = 56px
+    // Width: 100vw - 65px(left panels) - 221px(right panels) - 16px(padding) = calc(100vw - 302px)
+    // Height: 100vh - 48px(top) - 16px(padding) = calc(100vh - 64px)
+    highlight: { top: 56, left: 73, width: 'calc(100vw - 302px)', height: 'calc(100vh - 64px)', borderRadius: 12 },
     arrow: 'none',
     cardWidth: 360,
     hints: [
@@ -100,8 +106,8 @@ const STEPS: Step[] = [
     title: '🌐 Auto-Switching Layers',
     body: 'The active Layer automatically changes to match the tool you select, preventing you from clicking the wrong objects. You can also pick a layer manually from the top toolbar dropdown.',
     cardFixed: { top: 56, left: '50%', transform: 'translateX(-50%)' },
-    // Target the toolbar roughly in the top-middle
-    highlight: { top: 8, left: window.innerWidth / 2 - 100, width: 200, height: 38, borderRadius: 6 },
+    // Target the toolbar roughly in the top-middle using CSS so it resizes
+    highlight: { top: 8, left: '50%', transform: 'translateX(-50%)', width: 220, height: 32, borderRadius: 6 },
     arrow: 'none',
   },
 ];
@@ -155,6 +161,7 @@ export function Tutorial() {
   };
   if (highlight.left !== undefined) hlStyle.left = highlight.left;
   if (highlight.right !== undefined) hlStyle.right = highlight.right;
+  if (highlight.transform !== undefined) hlStyle.transform = highlight.transform;
 
   return (
     <>
