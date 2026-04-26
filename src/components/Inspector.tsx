@@ -3,6 +3,7 @@ import { useStore, getPixelsPerInch, mmToPx as mmToPxUtil, pxToInches as pxToInc
 import { HexColorPicker } from 'react-colorful';
 import { BASE_SIZES, UNIT_COLORS } from '../constants';
 import type { LayerName } from '../types';
+import { REFERENCE_CANVAS_WIDTH } from '../constants';
 export function Inspector() {
   const selectedIds = useStore(s => s.selectedIds);
   const units = useStore(s => s.units);
@@ -43,7 +44,11 @@ export function Inspector() {
   const [tempMapScaleX, setTempMapScaleX] = useState<string>('');
   const [tempMapScaleY, setTempMapScaleY] = useState<string>('');
 
-  const ppi = getPixelsPerInch(canvasWidth, board.widthInches);
+  // Unit positions are stored in reference-coordinate space (REFERENCE_CANVAS_WIDTH wide).
+  // Always use REFERENCE_CANVAS_WIDTH for ppi here — canvasWidth is the DOM size which
+  // varies with the window, and using it would cause formation/size calculations to
+  // produce wrong offsets (gaps or overlaps).
+  const ppi = getPixelsPerInch(REFERENCE_CANVAS_WIDTH, board.widthInches);
 
   const selectedUnits = units.filter(u => selectedIds.includes(u.id));
   const selectedDrawings = drawings.filter(d => selectedIds.includes(d.id));
