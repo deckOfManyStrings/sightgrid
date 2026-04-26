@@ -68,10 +68,22 @@ export function Inspector() {
   function handleMapUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset value so the same file can be re-selected if needed
+    e.target.value = '';
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      setBoard({ mapImageUrl: url, mapImageWidth: img.width, mapImageHeight: img.height });
+      setBoard({
+        mapImageUrl: url,
+        mapImageWidth: img.width,
+        mapImageHeight: img.height,
+        // Always start fresh: visible, centered, un-scaled
+        mapOpacity: 1,
+        mapX: 0,
+        mapY: 0,
+        mapScaleX: 1,
+        mapScaleY: 1,
+      });
     };
     img.src = url;
   }
