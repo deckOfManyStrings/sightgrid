@@ -58,27 +58,29 @@ const STEPS: Step[] = [
     body: 'Click the board to drop unit tokens. Configure the base size, count, and color in the Inspector panel on the right before clicking.',
     shortcut: 'U',
     cardFixed: { top: 132, left: 82 },
-    highlight: { top: 126, left: 6, width: 52, height: 52, borderRadius: 8 },
+    highlight: { top: 124, left: 6, width: 52, height: 52, borderRadius: 8 },
     arrow: 'left',
     arrowTop: '20px',
   },
   {
     title: '⬡ Draw Terrain',
-    body: 'Paint cover and obstacles with three tools: Line for walls, Rect for buildings, Polygon for irregular shapes. When drawing a polygon, click the glowing first vertex (or press Enter) to close it.',
+    body: 'Paint cover and obstacles. Hover the slot to pick Line, Rect, or Polygon. When drawing a polygon, click the glowing first vertex (or press Enter) to close it.',
     shortcut: 'L · R · P',
     cardFixed: { top: 190, left: 82 },
-    highlight: { top: 206, left: 6, width: 52, height: 162, borderRadius: 8 },
+    // Terrain button top is ~ 198
+    highlight: { top: 198, left: 6, width: 52, height: 52, borderRadius: 8 },
     arrow: 'left',
-    arrowTop: '50px',
+    arrowTop: '35px',
   },
   {
     title: '✎ Freehand Draw',
-    body: 'Sketch movement arrows, zone markers, or notes directly on the board. Use the Eraser to remove them. Drawings live on their own layer and never affect gameplay.',
+    body: 'Sketch movement arrows or notes directly on the board. Drawings live on their own layer and never affect gameplay.',
     shortcut: 'F · E',
-    cardFixed: { top: 420, left: 82 },
-    highlight: { top: 445, left: 6, width: 52, height: 114, borderRadius: 8 },
+    cardFixed: { top: 340, left: 82 },
+    // Freehand button top is ~ 348 (below Ruler)
+    highlight: { top: 350, left: 6, width: 52, height: 52, borderRadius: 8 },
     arrow: 'left',
-    arrowTop: '20px',
+    arrowTop: '36px',
   },
   {
     title: '🗺️ Upload a Map',
@@ -90,11 +92,19 @@ const STEPS: Step[] = [
   },
   {
     title: '🔧 Inspector Panel',
-    body: 'The Inspector adapts to your selection. Click a unit to edit its name, color, and line-of-sight range. Select terrain to delete it. Use the Layers section to toggle visibility or lock all objects at once.',
+    body: 'Name, color, and line-of-sight. Select multiple units to edit their names all at once, or use the Formation Rows and Columns buttons to neatly rank them. Use the Layers section to lock all objects.',
     cardFixed: { top: 340, right: 242 },
     highlight: { top: 300, right: 6, width: 212, height: 280, borderRadius: 6 },
     arrow: 'right',
     arrowTop: '30px',
+  },
+  {
+    title: '🌐 Auto-Switching Layers',
+    body: 'The active Layer automatically changes to match the tool you select, preventing you from clicking the wrong objects. You can also pick a layer manually from the top toolbar dropdown.',
+    cardFixed: { top: 56, left: '50%', transform: 'translateX(-50%)' },
+    // Target the toolbar roughly in the top-middle
+    highlight: { top: 8, left: window.innerWidth / 2 - 100, width: 200, height: 38, borderRadius: 6 },
+    arrow: 'none',
   },
 ];
 
