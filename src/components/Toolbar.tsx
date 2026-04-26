@@ -188,18 +188,20 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
 
 
       {tbtn('🗺️', 'Templates', () => setShowTemplates(true), false, 'primary')}
-      {tbtn('⬇️', 'Export', handleExport)}
-      {tbtn('⬆️', 'Import', handleImport)}
+      {import.meta.env.DEV && tbtn('⬇️', 'Export', handleExport)}
+      {import.meta.env.DEV && tbtn('⬆️', 'Import', handleImport)}
       {tbtn('✕', 'Clear', clearBoard, false, 'danger')}
 
-      {/* Hidden file input for import */}
-      <input
-        ref={importInputRef}
-        type="file"
-        accept=".json,.sightgrid.json"
-        style={{ display: 'none' }}
-        onChange={handleImportFile}
-      />
+      {/* Hidden file input for import — dev only */}
+      {import.meta.env.DEV && (
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".json,.sightgrid.json"
+          style={{ display: 'none' }}
+          onChange={handleImportFile}
+        />
+      )}
 
       {divider()}
 
