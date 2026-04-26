@@ -182,7 +182,7 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
             display: 'flex', flexDirection: 'column', gap: 6,
           }}>
             {TEMPLATES.map((tpl, idx) => {
-              const isLocked = !isPro && idx >= 2;
+              const isLocked = !isPro && idx >= 3;
               return (
                 <button
                   key={tpl.id}
