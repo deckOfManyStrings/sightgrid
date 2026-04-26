@@ -92,7 +92,7 @@ export function Inspector() {
     const sel = units.filter(uu => selectedIds.includes(uu.id));
     if (sel.length === 0) return;
 
-    const gap = 2; // tiny gap between bases so they touch without overlapping
+    const gap = 0; // bases touch edge-to-edge, no gap
 
     // Sort left-to-right by current position
     const sorted = [...sel].sort((a, b) => a.x - b.x);
