@@ -16,6 +16,8 @@ interface ToolbarProps {
 export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAuth }: ToolbarProps) {
   const activeTool = useStore(s => s.activeTool);
   const setActiveTool = useStore(s => s.setActiveTool);
+  const activeInteractionLayer = useStore(s => s.activeInteractionLayer);
+  const setActiveInteractionLayer = useStore(s => s.setActiveInteractionLayer);
   const undo = useStore(s => s.undo);
   const redo = useStore(s => s.redo);
   const stageScale = useStore(s => s.stageScale);
@@ -208,6 +210,49 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
       {/* View & History Controls */}
       {tbtn('↩', 'Undo', undo)}
       {tbtn('↪', 'Redo', redo)}
+
+      {divider()}
+
+      {/* Active Layer Picker */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{
+          fontSize: 10, color: '#475569', fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap',
+          marginRight: 2,
+        }}>Layer</span>
+        {([
+          { id: 'all',      label: 'All',      color: '#6366f1' },
+          { id: 'units',    label: 'Units',    color: '#3b82f6' },
+          { id: 'terrain',  label: 'Terrain',  color: '#94a3b8' },
+          { id: 'drawings', label: 'Drawings', color: '#f97316' },
+        ] as const).map((layer, i, arr) => {
+          const isActive = activeInteractionLayer === layer.id;
+          return (
+            <button
+              key={layer.id}
+              onClick={() => setActiveInteractionLayer(layer.id as any)}
+              title={layer.id === 'all' ? 'Interact with all layers' : `Interact with ${layer.label} layer only`}
+              style={{
+                padding: '3px 9px',
+                fontSize: 11, fontWeight: isActive ? 700 : 400,
+                background: isActive ? `${layer.color}28` : 'transparent',
+                border: `1px solid ${isActive ? layer.color : '#1e293b'}`,
+                borderLeft: i > 0 ? `1px solid ${isActive ? layer.color : '#1e293b'}` : undefined,
+                color: isActive ? layer.color : '#475569',
+                borderRadius: i === 0 ? '6px 0 0 6px' : i === arr.length - 1 ? '0 6px 6px 0' : '0',
+                marginLeft: i > 0 ? -1 : 0,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                whiteSpace: 'nowrap',
+                position: 'relative',
+                zIndex: isActive ? 1 : 0,
+              }}
+            >
+              {layer.label}
+            </button>
+          );
+        })}
+      </div>
 
       {divider()}
 
