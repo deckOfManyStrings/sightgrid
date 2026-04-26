@@ -298,41 +298,7 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
           <span style={{ fontSize: 13 }}>⌨️</span>
           <span>Shortcuts</span>
         </button>
-        {!isPro && (
-          <button
-            onClick={openProModal}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-              border: 'none', color: '#fff', borderRadius: 8,
-              padding: '4px 10px', fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', transition: 'all 0.15s',
-              boxShadow: '0 2px 8px rgba(245,158,11,0.3)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(245,158,11,0.4)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(245,158,11,0.3)'; }}
-          >
-            <span>👑</span>
-            <span>Go Pro</span>
-          </button>
-        )}
-        <a 
-          href="https://buy.stripe.com/dRm5kF4yOcSdgOV4G30Fi00"
-          target="_blank"
-          rel="noreferrer"
-          title="Support Firelane Development"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)',
-            color: '#34d399', borderRadius: 8,
-            padding: '4px 10px', fontSize: 12, fontWeight: 600,
-            textDecoration: 'none',
-            cursor: 'pointer', transition: 'all 0.15s',
-          }}
-        >
-          <span>💖</span>
-          <span>Support</span>
-        </a>
+
         <AccountButton
           onOpenScenarios={onOpenScenarios}
           onOpenAuth={onOpenAuth}
