@@ -186,15 +186,16 @@ function DrawingLayer({ layerId }: { layerId: LayerName }) {
       {drawings.map((d) => {
         const isSelected = selectedIds.includes(d.id);
 
-        const erase = () => {
+        const erase = (e?: any) => {
           if (activeTool === 'eraser' && !objectsLocked) {
             deleteDrawings([d.id]);
+            if (e) e.cancelBubble = true;
           }
         };
 
         const handleDragErase = (e: any) => {
           if (e.evt?.buttons === 1 || e.type === 'touchmove') {
-            erase();
+            erase(e);
           }
         };
 
@@ -214,14 +215,17 @@ function DrawingLayer({ layerId }: { layerId: LayerName }) {
             draggable={activeTool === 'select' && !objectsLocked && (activeInteractionLayer === 'all' || activeInteractionLayer === d.layerId)}
             onPointerDown={(e) => {
               if (activeInteractionLayer !== 'all' && activeInteractionLayer !== d.layerId) return;
-              erase();
+              erase(e);
             }}
             onPointerOver={handleDragErase}
             onTouchMove={handleDragErase}
             onClick={(e) => {
               if (activeInteractionLayer !== 'all' && activeInteractionLayer !== d.layerId) return;
-              if (activeTool === 'eraser') erase();
-              if (activeTool === 'select' && !objectsLocked) setSelectedIds([d.id]);
+              if (activeTool === 'eraser') erase(e);
+              if (activeTool === 'select' && !objectsLocked) {
+                setSelectedIds([d.id]);
+                e.cancelBubble = true;
+              }
             }}
             onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
               if (objectsLocked) return;
