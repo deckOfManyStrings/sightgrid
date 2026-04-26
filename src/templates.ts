@@ -25,7 +25,7 @@ export const TEMPLATES: ScenarioTemplate[] = [
   {
     id: 'empty',
     name: 'Empty Board',
-    emoji: '🟫',
+    emoji: '',
     subtitle: 'Blank slate — no terrain',
     description: 'Clears everything and leaves you with a clean board to build from scratch.',
     terrain: () => [],
@@ -34,8 +34,8 @@ export const TEMPLATES: ScenarioTemplate[] = [
   // ── 1. Table 1 ──────────────────────────────────────────────────────────────
   {
     id: 'table_1',
-    name: 'Table 1',
-    emoji: '🏰',
+    name: '11th Edition Map Preview',
+    emoji: '',
     subtitle: 'Pre-loaded map with terrain',
     description: 'A Warhammer 40K mission board with ruined terrain blocking key sightlines across a 44″×60″ board.',
     board: {
@@ -79,7 +79,7 @@ export const TEMPLATES: ScenarioTemplate[] = [
   {
     id: 'hammer_anvil_7',
     name: 'Hammer and Anvil Layout 7',
-    emoji: '⚔️',
+    emoji: '',
     subtitle: '60″×44″ landscape with deployment zones',
     description: 'A Hammer and Anvil layout on a 60″×44″ board. Red and green rectangles mark the opposing deployment zones. Terrain blocks key sightlines across the centre.',
     savedCanvasWidth: 900,

@@ -197,16 +197,7 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
                     opacity: isLocked && selected.id !== tpl.id ? 0.6 : 1,
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0, position: 'relative' }}>
-                    {tpl.emoji}
-                    {isLocked && (
-                      <span style={{
-                        position: 'absolute', bottom: -4, right: -4,
-                        fontSize: 10, background: '#0a0f1a', borderRadius: '50%',
-                        padding: 2, border: '1px solid #334155',
-                      }}>🔒</span>
-                    )}
-                  </span>
+
                   <div style={{ flex: 1, overflow: 'hidden' }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tpl.name}</span>
@@ -249,7 +240,7 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
             {/* Description */}
             <div>
               <div style={{ fontSize: 18, fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>
-                {selected.emoji} {selected.name}
+                {selected.name}
               </div>
               <div style={{
                 display: 'inline-flex', alignItems: 'center',
