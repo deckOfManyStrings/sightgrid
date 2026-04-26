@@ -674,6 +674,23 @@ export function Inspector() {
       {selectedIds.length > 1 && section(`${selectedIds.length} Selected`, (
         <>
           {layerSelect('mixed', (l) => changeLayer(selectedIds, l))}
+          {/* ── Group: Unit Name ── */}
+          <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>Unit Name</div>
+          <input
+            type="text"
+            value={selectedUnits[0]?.name ?? ''}
+            onChange={e => {
+              const val = e.target.value;
+              selectedUnits.forEach(u => updateUnit(u.id, { name: val }));
+            }}
+            placeholder="Name for all selected..."
+            style={{
+              width: '100%', background: '#1e293b', border: '1px solid #334155',
+              color: '#e2e8f0', borderRadius: 6, padding: '5px 8px', fontSize: 12,
+              marginBottom: 12, boxSizing: 'border-box',
+            }}
+          />
+
           {/* ── Group: Line of Sight ── */}
           <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>Line of Sight</div>
           {(() => {
