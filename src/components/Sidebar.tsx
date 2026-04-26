@@ -153,6 +153,17 @@ export function Sidebar() {
           translate: 0 0;
           pointer-events: auto;
         }
+        /* Transparent bridge: fills the gap between the sidebar edge and the flyout
+           so the cursor stays "inside" the sg-tool-wrapper hover zone while crossing. */
+        .sg-flyout::before {
+          content: '';
+          position: absolute;
+          right: 100%;
+          top: 0;
+          width: 12px;
+          height: 100%;
+          background: transparent;
+        }
       `}</style>
 
       {toolGroups.map((group, groupIndex) => {
