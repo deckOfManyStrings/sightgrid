@@ -213,46 +213,52 @@ export function Toolbar({ onOpenScenarios, onOpenAuth, onCloudSave, onRequestAut
 
       {divider()}
 
-      {/* Active Layer Picker */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <span style={{
-          fontSize: 10, color: '#475569', fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap',
-          marginRight: 2,
-        }}>Layer</span>
-        {([
-          { id: 'all',      label: 'All',      color: '#6366f1' },
-          { id: 'units',    label: 'Units',    color: '#3b82f6' },
-          { id: 'terrain',  label: 'Terrain',  color: '#94a3b8' },
-          { id: 'drawings', label: 'Drawings', color: '#f97316' },
-        ] as const).map((layer, i, arr) => {
-          const isActive = activeInteractionLayer === layer.id;
-          return (
-            <button
-              key={layer.id}
-              onClick={() => setActiveInteractionLayer(layer.id as any)}
-              title={layer.id === 'all' ? 'Interact with all layers' : `Interact with ${layer.label} layer only`}
-              style={{
-                padding: '3px 9px',
-                fontSize: 11, fontWeight: isActive ? 700 : 400,
-                background: isActive ? `${layer.color}28` : 'transparent',
-                border: `1px solid ${isActive ? layer.color : '#1e293b'}`,
-                borderLeft: i > 0 ? `1px solid ${isActive ? layer.color : '#1e293b'}` : undefined,
-                color: isActive ? layer.color : '#475569',
-                borderRadius: i === 0 ? '6px 0 0 6px' : i === arr.length - 1 ? '0 6px 6px 0' : '0',
-                marginLeft: i > 0 ? -1 : 0,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-                zIndex: isActive ? 1 : 0,
-              }}
-            >
-              {layer.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Active Layer Dropdown */}
+      {(() => {
+        const LAYER_OPTIONS = [
+          { id: 'all',      label: 'All Layers',  color: '#6366f1' },
+          { id: 'units',    label: 'Units',        color: '#3b82f6' },
+          { id: 'terrain',  label: 'Terrain',      color: '#94a3b8' },
+          { id: 'drawings', label: 'Drawings',     color: '#f97316' },
+        ] as const;
+        const active = LAYER_OPTIONS.find(l => l.id === activeInteractionLayer) ?? LAYER_OPTIONS[0];
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              fontSize: 10, color: '#475569', fontWeight: 700,
+              textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap',
+            }}>Layer</span>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <select
+                value={activeInteractionLayer}
+                onChange={e => setActiveInteractionLayer(e.target.value as any)}
+                title="Active interaction layer"
+                style={{
+                  appearance: 'none', WebkitAppearance: 'none',
+                  background: `${active.color}18`,
+                  border: `1px solid ${active.color}88`,
+                  color: active.color,
+                  borderRadius: 6, padding: '3px 24px 3px 8px',
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                  outline: 'none', transition: 'all 0.15s',
+                  whiteSpace: 'nowrap', minWidth: 90,
+                }}
+              >
+                {LAYER_OPTIONS.map(l => (
+                  <option key={l.id} value={l.id} style={{ background: '#0f172a', color: '#e2e8f0' }}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+              {/* Custom chevron */}
+              <span style={{
+                position: 'absolute', right: 7, pointerEvents: 'none',
+                fontSize: 9, color: active.color, lineHeight: 1,
+              }}>▼</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {divider()}
 

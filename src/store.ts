@@ -333,8 +333,16 @@ export const useStore = create<AppStore>()(
     // Active tool
     activeTool: 'select',
     setActiveTool: (t) => {
+      // Auto-switch the active interaction layer to match the selected tool.
+      const layerForTool = (
+        t === 'place_unit'                                                          ? 'units'
+        : t === 'terrain_line' || t === 'terrain_rect' || t === 'terrain_polygon'  ? 'terrain'
+        : t === 'draw' || t === 'draw_rect' || t === 'draw_polygon' || t === 'draw_line' ? 'drawings'
+        : 'all' // select, ruler, eraser, map_adjust → interact with everything
+      );
       set((s) => {
         s.activeTool = t;
+        s.activeInteractionLayer = layerForTool as any;
         s.ruler.active = false;
         if (t === 'select') s.selectedIds = [];
       });
