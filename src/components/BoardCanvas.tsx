@@ -81,17 +81,21 @@ function TerrainLayer({ layerId, onTerrainMouseDown }: TerrainLayerProps) {
       {terrain.map((t) => {
         const isSelected = selectedIds.includes(t.id);
         const color = tagColor(t);
+        const inActiveLayer = activeInteractionLayer === 'all' || activeInteractionLayer === layerId;
         const commonProps = {
           opacity: t.opacity,
+          // When this object is on an inactive layer, make it completely pointer-transparent
+          // so clicks fall through to objects on the active layer below/above.
+          listening: inActiveLayer,
           onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => {
-            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== t.layerId) return;
+            if (!inActiveLayer) return;
             if (activeTool === 'select' && !objectsLocked) {
               e.cancelBubble = true;
               onTerrainMouseDown(t.id);
             }
           },
           onClick: (e: Konva.KonvaEventObject<MouseEvent>) => {
-            if (activeInteractionLayer !== 'all' && activeInteractionLayer !== t.layerId) return;
+            if (!inActiveLayer) return;
             if (activeTool === 'select' && !objectsLocked) {
               e.cancelBubble = true;
               if (e.evt.shiftKey) {
@@ -101,7 +105,7 @@ function TerrainLayer({ layerId, onTerrainMouseDown }: TerrainLayerProps) {
               }
             }
           },
-          draggable: activeTool === 'select' && !t.locked && !objectsLocked,
+          draggable: activeTool === 'select' && !t.locked && !objectsLocked && inActiveLayer,
           onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
             if (objectsLocked) return;
             const dx = e.target.x(), dy = e.target.y();
@@ -206,7 +210,8 @@ function DrawingLayer({ layerId }: { layerId: LayerName }) {
             lineCap={d.shape === 'freehand' ? "round" : "butt"}
             lineJoin={d.shape === 'freehand' ? "round" : "miter"}
             hitStrokeWidth={Math.max(15, d.strokeWidth + 5)}
-            draggable={activeTool === 'select' && !objectsLocked}
+            listening={activeInteractionLayer === 'all' || activeInteractionLayer === d.layerId}
+            draggable={activeTool === 'select' && !objectsLocked && (activeInteractionLayer === 'all' || activeInteractionLayer === d.layerId)}
             onPointerDown={(e) => {
               if (activeInteractionLayer !== 'all' && activeInteractionLayer !== d.layerId) return;
               erase();
@@ -515,6 +520,7 @@ function UnitLayer({ layerId, onUnitMouseDown, onUnitHover, onDragPrimaryChange,
             id={`unit-${u.id}`}
             x={u.x} y={u.y}
             rotation={u.rotation}
+            listening={activeInteractionLayer === 'all' || activeInteractionLayer === u.layerId}
             draggable={draggable && (activeInteractionLayer === 'all' || activeInteractionLayer === u.layerId)}
             onMouseEnter={() => {
               if (activeInteractionLayer !== 'all' && activeInteractionLayer !== u.layerId) return;
@@ -794,7 +800,7 @@ export function BoardCanvas() {
 
   // WASD smooth pan
   useEffect(() => {
-    const SPEED = 25;
+    const SPEED = 12;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -1412,7 +1418,9 @@ export function BoardCanvas() {
 
         <MapImageLayer />
         <GridLayer />
-        {[('terrain' as LayerName), ('drawings' as LayerName), ('units' as LayerName)].map(layerId => (
+        {/* Render order: drawings at bottom, terrain above, units always on top.
+             LoS renders inside the 'units' Konva Layer so it's always visible above terrain. */}
+        {[('drawings' as LayerName), ('terrain' as LayerName), ('units' as LayerName)].map(layerId => (
           <Layer key={layerId}>
             <TerrainLayer layerId={layerId} onTerrainMouseDown={(id) => { heldTerrainIdRef.current = id; }} />
             <DrawingLayer layerId={layerId} />
