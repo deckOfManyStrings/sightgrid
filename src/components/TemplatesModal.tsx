@@ -287,7 +287,7 @@ export function TemplatesModal({ onClose }: TemplatesModalProps) {
             {/* Load button */}
             <div style={{ marginTop: 'auto' }}>
               {(() => {
-                const isLocked = !isPro && TEMPLATES.findIndex(t => t.id === selected.id) >= 2;
+                const isLocked = !isPro && TEMPLATES.findIndex(t => t.id === selected.id) >= 3;
                 if (isLocked) {
                   return (
                     <button
